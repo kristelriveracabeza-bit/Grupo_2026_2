@@ -1,0 +1,16 @@
+{
+  "name": "dermatologia-web",
+  "version": "1.0.0",
+  "description": "Frontend para Dermatología",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "mkdir -p dist && echo '<h1>Dermatología - Sistema de Reservas</h1><p>Build generado el: '$(date)'</p>' > dist/index.html && cp health.html dist/ 2>/dev/null || true",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {}
+}

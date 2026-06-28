@@ -1,0 +1,267 @@
+version: 0.2
+# CONFIGURACIÓN DE ENVÍO DE REPORTES
+reports:
+  build_reports:
+    files:
+      - '**/*'
+    base-directory: 'reports'
+
+# FASES DEL BUILD
+phases:
+  # PRE-BUILD: Preparación del entorno
+  pre_build:
+    commands:
+      # Configuración inicial 
+      - echo "=== PRE-BUILD: Iniciando ==="
+      - echo "Fecha y hora: $(date)"
+      - echo "AWS Region: $AWS_DEFAULT_REGION"
+      - echo "Build ID: $CODEBUILD_BUILD_ID"
+      - echo "Source Version: $CODEBUILD_RESOLVED_SOURCE_VERSION"
+      
+      # Variables de entorno 
+      - echo "=== Configurando variables ==="
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:-latest}
+      - BUILD_TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+      - IMAGE_TAG_WITH_DATE="${IMAGE_TAG}-${BUILD_TIMESTAMP}"
+      - echo "IMAGE_TAG: $IMAGE_TAG"
+      - echo "IMAGE_TAG_WITH_DATE: $IMAGE_TAG_WITH_DATE"
+      - echo "REPOSITORY_URI: $REPOSITORY_URI"
+      
+      # Verificar ECR 
+      - echo "=== Verificando repositorio ECR ==="
+      - |
+        if ! aws ecr describe-repositories --repository-names $(basename $REPOSITORY_URI) --region $AWS_DEFAULT_REGION 2>/dev/null; then
+          echo "El repositorio ECR no existe. Creándolo..."
+          aws ecr create-repository --repository-name $(basename $REPOSITORY_URI) --region $AWS_DEFAULT_REGION
+        else
+          echo "Repositorio ECR existe"
+        fi
+      
+      # Login ECR 
+      - echo "=== Logeando en Amazon ECR ==="
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
+      
+      # Versiones de herramientas 
+      - echo "=== Versiones ==="
+      - docker --version
+      - aws --version
+      - git --version
+      
+      # Verificar archivos necesarios 
+      - echo "=== Verificando archivos ==="
+      - |
+        if [ -f "Dockerfile" ]; then
+          echo " Dockerfile encontrado"
+        else
+          echo " Dockerfile no encontrado"
+          exit 1
+        fi
+      
+      - |
+        if [ -f "appspec.yaml" ]; then
+          echo " appspec.yaml encontrado"
+        else
+          echo " appspec.yaml no encontrado - se usará el de la raíz"
+        fi
+      
+      - |
+        if [ -f "taskdef.json" ]; then
+          echo " taskdef.json encontrado"
+        else
+          echo " taskdef.json no encontrado - se usará el de la raíz"
+        fi
+      
+      # ------- Variables de aplicación -------
+      - echo "=== Variables de aplicación ==="
+      - |
+        if [ -f ".env" ]; then
+          echo " Archivo .env encontrado"
+          export $(cat .env | xargs)
+        fi
+      
+      - echo "ENVIRONMENT: ${ENVIRONMENT:-dev}"
+      - echo "LOG_LEVEL: ${LOG_LEVEL:-info}"
+
+  # BUILD: Construcción de la imagen
+  build:
+    commands:
+      - echo "=== BUILD: Iniciando construcción ==="
+      - echo "Inicio: $(date)"
+      
+      # Construir imagen 
+      - echo "=== Construyendo imagen Docker ==="
+      - |
+        docker build \
+          --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+          --build-arg VCS_REF=$CODEBUILD_RESOLVED_SOURCE_VERSION \
+          --build-arg BUILD_NUMBER=$CODEBUILD_BUILD_NUMBER \
+          --build-arg ENVIRONMENT=${ENVIRONMENT:-dev} \
+          --label "com.clinica.build-date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+          --label "com.clinica.vcs-ref=$CODEBUILD_RESOLVED_SOURCE_VERSION" \
+          --label "com.clinica.build-number=$CODEBUILD_BUILD_NUMBER" \
+          --label "com.clinica.environment=${ENVIRONMENT:-dev}" \
+          -t $REPOSITORY_URI:latest .
+      
+      - echo "=== Verificando imagen ==="
+      - docker images $REPOSITORY_URI:latest
+      
+      # Etiquetar imagen 
+      - echo "=== Etiquetando imagen ==="
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG_WITH_DATE
+      
+      # Verificar imagen construida 
+      - echo "=== Verificando imagen construida ==="
+      - docker run --rm $REPOSITORY_URI:latest --version || echo "No se pudo ejecutar --version"
+      
+      # Ejecutar tests en contenedor 
+      - echo "=== Ejecutando tests en contenedor ==="
+      - |
+        if [ -n "$TEST_COMMAND" ]; then
+          echo "Ejecutando: $TEST_COMMAND"
+          docker run --rm $REPOSITORY_URI:latest $TEST_COMMAND
+        else
+          echo "No se definió TEST_COMMAND, saltando tests"
+        fi
+      
+      - echo "=== BUILD completado ==="
+      - echo "Fin: $(date)"
+
+  # POST-BUILD: Subida y despliegue
+  post_build:
+    commands:
+      - echo "=== POST-BUILD: Iniciando ==="
+      
+      # Subir imágenes a ECR 
+      - echo "=== Subiendo imágenes a ECR ==="
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - docker push $REPOSITORY_URI:$IMAGE_TAG_WITH_DATE
+      
+      # Generar imagedefinitions.json 
+      - echo "=== Generando imagedefinitions.json ==="
+      - |
+        cat > imagedefinitions.json << EOF
+        [
+          {
+            "name": "user-app",
+            "imageUri": "${REPOSITORY_URI}:${IMAGE_TAG}"
+          }
+        ]
+        EOF
+      
+      - echo "=== Contenido de imagedefinitions.json ==="
+      - cat imagedefinitions.json
+      
+      # Procesar taskdef.json 
+      - echo "=== Procesando taskdef.json ==="
+      - |
+        if [ -f "taskdef.json" ]; then
+          echo " taskdef.json encontrado, procesando..."
+          # Reemplazar variables en taskdef.json
+          sed -i "s|REPOSITORY_URI|${REPOSITORY_URI}|g" taskdef.json
+          sed -i "s|IMAGE_TAG|${IMAGE_TAG}|g" taskdef.json
+          sed -i "s|ENVIRONMENT|${ENVIRONMENT:-dev}|g" taskdef.json
+          sed -i "s|ACCOUNT_ID|${AWS_ACCOUNT_ID}|g" taskdef.json
+          sed -i "s|REGION|${AWS_DEFAULT_REGION}|g" taskdef.json
+        else
+          echo "taskdef.json no encontrado, usando template"
+        fi
+      
+      # Validar taskdef.json 
+      - echo "=== Validando taskdef.json ==="
+      - |
+        if [ -f "taskdef.json" ]; then
+          if jq empty taskdef.json 2>/dev/null; then
+            echo "taskdef.json es válido"
+          else
+            echo "taskdef.json no es un JSON válido"
+            cat taskdef.json
+            exit 1
+          fi
+        fi
+      
+      # ------- Procesar appspec.yaml -------
+      - echo "=== Procesando appspec.yaml ==="
+      - |
+        if [ -f "appspec.yaml" ]; then
+          echo " appspec.yaml encontrado"
+        else
+          echo " appspec.yaml no encontrado, creando default"
+          cat > appspec.yaml << EOF
+        version: 1.0
+        Resources:
+          - TargetService:
+              Type: AWS::ECS::Service
+              Properties:
+                TaskDefinition: ${TASK_DEFINITION_ARN}
+                LoadBalancerInfo:
+                  ContainerName: "user-app"
+                  ContainerPort: 3001
+        EOF
+        fi
+      
+      # Subir artefactos a S3 
+      - echo "=== Guardando artefactos ==="
+      - |
+        if [ -n "$ARTIFACTS_BUCKET" ]; then
+          aws s3 cp imagedefinitions.json s3://$ARTIFACTS_BUCKET/$CODEBUILD_BUILD_ID/imagedefinitions.json
+          [ -f "taskdef.json" ] && aws s3 cp taskdef.json s3://$ARTIFACTS_BUCKET/$CODEBUILD_BUILD_ID/taskdef.json
+          [ -f "appspec.yaml" ] && aws s3 cp appspec.yaml s3://$ARTIFACTS_BUCKET/$CODEBUILD_BUILD_ID/appspec.yaml
+        fi
+      
+      # Notificaciones 
+      - echo "=== Enviando notificaciones ==="
+      - |
+        if [ -n "$SLACK_WEBHOOK_URL" ]; then
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\" Despliegue completado: ${REPOSITORY_URI}:${IMAGE_TAG}\"}" \
+            $SLACK_WEBHOOK_URL || echo " No se pudo enviar notificación a Slack"
+        fi
+      
+      - echo "=== POST-BUILD completado ==="
+      - echo " Build finalizado: $(date)"
+
+# ARTEFACTOS
+artifacts:
+  files:
+    - imagedefinitions.json
+    - appspec.yaml
+    - taskdef.json
+    - build.log
+  discard-paths: no
+  name: $(echo $CODEBUILD_BUILD_ID)
+
+# CACHE (opcional, para acelerar builds)
+
+cache:
+  paths:
+    - /root/.cache/pip
+    - /root/.npm
+    - /root/.m2/repository
+    - /var/lib/docker
+
+
+# ENVIRONMENT VARIABLES
+
+env:
+  variables:
+    # Variables por defecto
+    ENVIRONMENT: "dev"
+    LOG_LEVEL: "info"
+    NODE_ENV: "production"
+  
+  parameter-store:
+    # Variables desde Parameter Store (SSM)
+    DATABASE_URL: /${PROJECT_NAME}/${ENVIRONMENT}/database/url
+    REDIS_URL: /${PROJECT_NAME}/${ENVIRONMENT}/redis/url
+    API_KEY: /${PROJECT_NAME}/${ENVIRONMENT}/api/key
+  
+  secrets-manager:
+    # SINTAXIS CORREGIDA PARA SECRETS MANAGER
+    # Formato: SECRET_NAME:JSON_KEY
+    DB_PASSWORD: ${PROJECT_NAME}-db-password-${ENVIRONMENT}:password
+    JWT_SECRET: ${PROJECT_NAME}-jwt-secret-${ENVIRONMENT}:secret
+    # Si el secret solo tiene un valor (no JSON), se usa así:
+    # API_KEY: ${PROJECT_NAME}-api-key-${ENVIRONMENT}

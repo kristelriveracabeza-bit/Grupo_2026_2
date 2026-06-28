@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Frontend Web
+  web:
+    image: nginx:perl
+    container_name: dermatologia-web
+    ports:
+      - "80:80"
+    networks:
+      - web_net
+      - api_net
+    depends_on:
+      - api
+
+  # Backend API
+  api:
+    image: node:trixie
+    container_name: dermatologia-api
+    environment:
+      NODE_ENV: development
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: dermatologia
+      DB_PASSWORD: dermatologia123
+      DB_NAME: dermatologiadb
+    ports:
+      - "3000:3000"
+    networks:
+      - api_net
+      - bd_net
+    depends_on:
+      - mysql
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+
+  # Base de datos
+  mysql:
+    image: mysql:8.0-oracle
+    container_name: dermatologia-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: dermatologiadb
+      MYSQL_USER: dermatologia
+      MYSQL_PASSWORD: dermatologia123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - bd_net
+
+# Redes definidas (siguiendo tu estilo)
+networks:
+  web_net:
+    driver: bridge   # Para conexión externa (usuarios)
+  api_net:
+    driver: bridge   # Para comunicación frontend-backend
+  bd_net:
+    driver: bridge   # Para comunicación backend-base de datos
+
+# Volúmenes persistentes
+volumes:
+  mysql_data:

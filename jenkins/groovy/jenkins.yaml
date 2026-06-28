@@ -1,0 +1,45 @@
+jenkins:
+  systemMessage: "Laboratorio IAC - Configuración automática"
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "kristel"
+          password: "Elenita2026"
+          name: "Kristel Rivera Chamorro"
+          properties:
+            - mailer:
+                emailAddress: "kristel@lab01.com"
+
+  authorizationStrategy:
+    unsecured:
+      allowAnonymousRead: true
+
+  nodes:
+    - permanent:
+        name: "built-in"
+        remoteFS: "/var/jenkins_home"
+        numExecutors: 2
+
+unclassified:
+  location:
+    url: "https://studious-sniffle-p4j6x997rvxhr4g4-8080.app.github.dev/"
+    adminAddress: "kriscatherivera2002@gmail.com"
+
+  gitHubPluginConfig:
+    configs:
+      - name: "GitHub"
+        apiUrl: "https://api.github.com"
+        manageHooks: false
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "github-credentials"
+              username: "kristel2002"
+              password: "TU_GITHUB_TOKEN_AQUI"
+              description: "Credenciales para GitHub"
