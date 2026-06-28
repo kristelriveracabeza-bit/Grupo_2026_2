@@ -1,0 +1,34 @@
+- name: Hola mundo con Ansible
+  hosts: localhost
+  vars:
+    ambiente: dev
+    nombre: "Kristel"  # Variable para el nombre
+  tasks:
+    - name: Saludar al usuario
+      ansible.builtin.debug:
+        msg: "Hola desde la consola {{inventory_hostname}}"
+
+    - name: Crearemos un archivo de prueba
+      ansible.builtin.file:
+        path: ./ejemplo.txt
+        state: touch
+
+    - name: Escribiré mi nombre en el archivo
+      ansible.builtin.copy:
+        content: "Mi nombre es {{nombre}} y estoy en ambiente: {{ambiente}}"
+        dest: ./ejemplo.txt
+
+    - name: Tarea específica para entorno DEV
+      ansible.builtin.debug:
+        msg: "Ejecutando tarea específica de DESARROLLO - Validación de código"
+      when: ambiente == "dev"
+
+    - name: Tarea específica para entorno PROD
+      ansible.builtin.debug:
+        msg: "Ejecutando tarea específica de PRODUCCIÓN - Backup y monitoreo"
+      when: ambiente == "prod"
+
+    - name: Tarea específica para entorno QA
+      ansible.builtin.debug:
+        msg: "Ejecutando tarea específica de QA - Pruebas de integración"
+      when: ambiente == "qa"
