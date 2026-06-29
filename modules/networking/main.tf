@@ -831,4 +831,12 @@ resource "aws_flow_log" "vpc" {
 # CKV2_AWS_62 — Los buckets S3 no notifican cuando se crea o modifica un objeto. No hay forma automática de detectar actividad sospechosa o iniciar procesos al llegar nuevos archivos.
 # CKV2_AWS_19 — La IP elástica (EIP) no está asociada a una instancia EC2. Checkov lo marca como error, pero en este caso es un falso positivo porque el EIP es para el NAT Gateway.
 # CKV_AWS_18 — Los buckets S3 no tienen logging de acceso. No hay registro de quién descargó, borró o modificó archivos.
+# CKV2_AWS_76 — El WAF del ALB no tiene activada la regla contra Log4j. Un atacante puede explotar la vulnerabilidad Log4Shell directamente contra la aplicación.
+# CKV2_AWS_5 — Checkov detecta security groups sin recursos asociados visibles. Es un falso positivo porque los SGs se usan en otros módulos que Checkov no puede ver desde aquí.
+# CKV2_AWS_6 — Los buckets S3 no tienen bloqueado el acceso público. Un error de configuración futuro podría exponer los logs de WAF a internet.
+# CKV2_AWS_12 — El security group por defecto del VPC no tiene reglas restrictivas. Si algún recurso queda asociado a ese SG por accidente, tendría tráfico abierto.
+# CKV_AWS_145 — Los buckets S3 no usan cifrado KMS, solo el cifrado por defecto de AWS. Sin KMS propio, no puedes revocar el acceso a los datos deshabilitando la clave.
+# CKV_AWS_144 — Los buckets S3 no tienen replicación en otra región. Si la región principal falla o los datos se corrompen, no hay copia de respaldo.
+# CKV_AWS_21 — Los buckets S3 no tienen versionado activado. Si se sobreescribe o borra un archivo por error, no se puede recuperar la versión anterior.
+
 
