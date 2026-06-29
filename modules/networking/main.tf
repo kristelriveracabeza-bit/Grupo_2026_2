@@ -35,7 +35,7 @@ resource "aws_internet_gateway" "this" {
     Environment = var.environment
   })
 }
-
+# CKV_AWS_382  Los security groups permiten todo el tráfico saliente sin restricción. Si no se corrige, cualquier proceso comprometido dentro del servidor puede conectarse a cualquier destino en internet.
 
 # SUBNETS PÚBLICAS
 
