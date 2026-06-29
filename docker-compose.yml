@@ -1,5 +1,5 @@
 services:
-  # OBSERVABILIDAD
+  #  OBSERVABILIDAD 
   prometheus:
     image: prom/prometheus:v3.8.1
     container_name: lab-prometheus
@@ -88,7 +88,6 @@ services:
     networks:
       - observability-net
 
-  # SONARQUBE CON POSTGRESQL
   sonar-db:
     image: postgres:16
     container_name: lab-sonar-db
@@ -135,7 +134,61 @@ services:
       timeout: 10s
       retries: 5
 
-# REDES Y VOLÚMENES
+  # Base de datos MySQL
+  mysql:
+    image: mysql:8.0-oracle
+    container_name: dermatologia-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: dermatologiadb
+      MYSQL_USER: dermatologia
+      MYSQL_PASSWORD: dermatologia123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - observability-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Backend (Node.js)
+  api:
+    image: node:trixie        
+    container_name: dermatologia-api
+    environment:
+      NODE_ENV: production
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: dermatologia
+      DB_PASSWORD: dermatologia123
+      DB_NAME: dermatologiadb
+    ports:
+      - "3002:3000"           
+    networks:
+      - observability-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Frontend Web 
+  web:
+    image: nginx:perl
+    container_name: dermatologia-web
+    ports:
+    - "80:80"
+    networks:
+    - observability-net
+    depends_on:
+    - api
+    restart: unless-stopped
+
+# REDES Y VOLÚMENES 
 networks:
   observability-net:
     driver: bridge
@@ -148,3 +201,4 @@ volumes:
   sonarqube_extensions:
   sonarqube_logs:
   postgres_data:
+  mysql_data:   
