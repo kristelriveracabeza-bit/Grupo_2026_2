@@ -966,8 +966,8 @@ resource "aws_cloudwatch_log_group" "codebuild_checkov" {
     Project     = var.project_name
   })
 }
-CKV2_AWS_64 — La clave KMS no tiene una política definida. Sin política explícita, el acceso a la clave queda mal definido y puede abrirse más de lo esperado.
-CKV2_AWS_57 — Los secrets en Secrets Manager no rotan automáticamente. Si una credencial se filtra, permanece válida indefinidamente hasta que alguien la cambie a mano.
-CKV_AWS_145 — Los buckets S3 no usan cifrado KMS, solo el cifrado por defecto de AWS. Sin KMS propio, no puedes revocar el acceso a los datos deshabilitando la clave.
-CKV_AWS_144 — Los buckets S3 no tienen replicación en otra región. Si la región principal falla o los datos se corrompen, no hay copia de respaldo.
-CKV2_AWS_10 — CloudTrail no está enviando los logs a CloudWatch. Sin esto, no hay alertas en tiempo real sobre actividad sospechosa en la cuenta de AWS.
+# CKV2_AWS_64 — La clave KMS no tiene una política definida. Sin política explícita, el acceso a la clave queda mal definido y puede abrirse más de lo esperado.
+# CKV2_AWS_57 — Los secrets en Secrets Manager no rotan automáticamente. Si una credencial se filtra, permanece válida indefinidamente hasta que alguien la cambie a mano.
+# CKV_AWS_145 — Los buckets S3 no usan cifrado KMS, solo el cifrado por defecto de AWS. Sin KMS propio, no puedes revocar el acceso a los datos deshabilitando la clave.
+#CKV_AWS_144 — Los buckets S3 no tienen replicación en otra región. Si la región principal falla o los datos se corrompen, no hay copia de respaldo.
+# CKV2_AWS_10 — CloudTrail no está enviando los logs a CloudWatch. Sin esto, no hay alertas en tiempo real sobre actividad sospechosa en la cuenta de AWS.
