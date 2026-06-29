@@ -999,3 +999,4 @@ resource "aws_iam_policy" "opensearch_access" {
     Environment = var.environment
   })
 }
+# CKV2_AWS_57 — Los secrets en Secrets Manager no rotan automáticamente. Si una credencial se filtra, permanece válida indefinidamente hasta que alguien la cambie a mano.
