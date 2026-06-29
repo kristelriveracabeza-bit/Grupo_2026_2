@@ -60,7 +60,7 @@ La integridad y el monitoreo transversal del ecosistema se gestionan mediante un
 * **Gestión de Secretos:** **AWS Secrets Manager** cuida las llaves de acceso cifradas de la plataforma, rotando credenciales de forma automática y protegiendo la conexión hacia las bases de datos o APIs externas.
 * **Control Financiero:** **AWS Budgets** vigila de manera estricta el consumo financiero de todos los recursos elásticos de la clínica, despachando alertas tempranas al equipo de DevOps cuando los costes proyectados se aproximan a los presupuestos mensuales establecidos.
 ---
-![Texto alternativo](https://raw.githubusercontent.com/USUARIO/REPOSITORIO/RAMA/ruta/Captura%20de%20pantalla%202026-06-28%20193627.png)
+![Captura de pantalla](https://raw.githubusercontent.com/kristelriveracabeza-bit/Grupo_2026_2/b16feb7220f701c932bac8ed50f16438c4b632e5/Captura%20de%20pantalla%202026-06-28%20193627.png)
 # Dermatologia (AWS + IaC)
 
 
