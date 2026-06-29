@@ -826,3 +826,5 @@ resource "aws_flow_log" "vpc" {
     Environment = var.environment
   })
 }
+# CKV_AWS_158 — El grupo de logs de CloudWatch no está cifrado con KMS. Si alguien accede al almacenamiento de AWS, puede leer los logs en texto plano.
+
