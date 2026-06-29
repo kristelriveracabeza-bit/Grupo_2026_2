@@ -181,7 +181,7 @@ services:
     image: nginx:perl
     container_name: dermatologia-web
     ports:
-    - "80:80"
+    - "8080:80"
     networks:
     - observability-net
     depends_on:
