@@ -1,6 +1,6 @@
-# =============================================================================
+
 # OUTPUTS - CONFIGURACIÓN Y ESTADO
-# =============================================================================
+
 
 output "configuration_summary" {
   description = "Resumen de la configuración actual"
@@ -23,9 +23,9 @@ output "configuration_summary" {
 # ELIMINADO: output "sns_topic_fifo_status"
 # ELIMINADO: output "sqs_queue_fifo_status"
 
-# =============================================================================
+
 # OUTPUTS - URLS DE CONSOLA AWS
-# =============================================================================
+
 
 output "sqs_console_url" {
   description = "URL de la consola de SQS"
@@ -62,9 +62,9 @@ output "pipeline_console_url" {
   value       = var.enable_cicd ? "https://console.aws.amazon.com/codesuite/codepipeline/pipelines/${module.cicd[0].codepipeline_name}/view?region=${var.aws_region}" : null
 }
 
-# =============================================================================
+
 # OUTPUTS - COMANDOS ÚTILES AWS CLI
-# =============================================================================
+
 
 # ELIMINADO: output "test_sns_publish_command" (usaba var.sns_topic_fifo)
 
@@ -83,9 +83,9 @@ output "view_lambda_logs_command" {
   value       = "aws logs filter-log-events --log-group-name /aws/lambda/${module.compute.lambda_function_name} --region ${var.aws_region} --limit 20"
 }
 
-# =============================================================================
+
 # OUTPUTS - INFORMACIÓN PARA SCRIPTS
-# =============================================================================
+
 
 output "deployment_info" {
   description = "Información de despliegue para scripts"
