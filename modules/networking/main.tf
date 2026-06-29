@@ -827,4 +827,8 @@ resource "aws_flow_log" "vpc" {
   })
 }
 # CKV_AWS_158 — El grupo de logs de CloudWatch no está cifrado con KMS. Si alguien accede al almacenamiento de AWS, puede leer los logs en texto plano.
+# CKV2_AWS_61 — Los buckets S3 no tienen reglas de ciclo de vida. Los archivos se acumulan indefinidamente, aumentando el costo de almacenamiento sin control.
+# CKV2_AWS_62 — Los buckets S3 no notifican cuando se crea o modifica un objeto. No hay forma automática de detectar actividad sospechosa o iniciar procesos al llegar nuevos archivos.
+# CKV2_AWS_19 — La IP elástica (EIP) no está asociada a una instancia EC2. Checkov lo marca como error, pero en este caso es un falso positivo porque el EIP es para el NAT Gateway.
+# CKV_AWS_18 — Los buckets S3 no tienen logging de acceso. No hay registro de quién descargó, borró o modificó archivos.
 
