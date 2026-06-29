@@ -1,6 +1,6 @@
-# =============================================================================
+
 # VARIABLES DEL PROYECTO
-# =============================================================================
+
 
 variable "project_name" {
   description = "Nombre del proyecto"
@@ -29,9 +29,9 @@ variable "tags" {
   default     = {}
 }
 
-# =============================================================================
+
 # VARIABLES PARA VPC Y REDES
-# =============================================================================
+
 
 variable "vpc_id" {
   description = "ID de la VPC donde se desplegarán los recursos"
@@ -54,9 +54,9 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/16"
 }
 
-# =============================================================================
+
 # VARIABLES PARA ECS
-# =============================================================================
+
 
 variable "ecr_repository_url" {
   description = "URL del repositorio ECR para la imagen de la aplicación"
@@ -150,9 +150,9 @@ variable "enable_lambda" {
   default     = true
 }
 
-# =============================================================================
+
 # VARIABLES PARA LAMBDA
-# =============================================================================
+
 
 variable "lambda_function_name" {
   description = "Nombre de la función Lambda"
@@ -220,9 +220,9 @@ variable "sns_topic_arn" {
   default     = ""
 }
 
-# =============================================================================
+
 # VARIABLES PARA SECRETS Y COGNITO
-# =============================================================================
+
 
 variable "secret_name" {
   description = "Nombre del secret en Secrets Manager"
@@ -248,9 +248,9 @@ variable "cognito_client_id" {
   default     = ""
 }
 
-# =============================================================================
+
 # VARIABLES PARA SNS Y SQS (RECURSOS EXISTENTES)
-# =============================================================================
+
 
 variable "sns_topic_name" {
   description = "Nombre del tema SNS existente"
@@ -270,9 +270,9 @@ variable "s3_bucket_name" {
   default     = ""
 }
 
-# =============================================================================
+
 # VARIABLES PARA MICROSERVICIOS
-# =============================================================================
+
 
 variable "appointments_service_name" {
   description = "Nombre del servicio de appointments"
@@ -298,9 +298,9 @@ variable "patients_endpoint" {
   default     = ""
 }
 
-# =============================================================================
+
 # VARIABLES PARA MONITOREO
-# =============================================================================
+
 
 variable "log_retention_days" {
   description = "Días de retención para logs de CloudWatch"
@@ -320,9 +320,9 @@ variable "lambda_duration_threshold" {
   default     = 30
 }
 
-# =============================================================================
+
 # VARIABLES PARA BUDGETS
-# =============================================================================
+
 
 variable "create_budget" {
   description = "Crear budget de AWS"
@@ -354,9 +354,9 @@ variable "budget_alert_emails" {
   default     = []
 }
 
-# =============================================================================
+
 # VARIABLES PARA DYNAMODB
-# =============================================================================
+
 
 variable "dynamodb_table_arns" {
   description = "ARNs de las tablas DynamoDB"
@@ -364,9 +364,9 @@ variable "dynamodb_table_arns" {
   default     = []
 }
 
-# =============================================================================
+
 # VARIABLES PARA ECR
-# =============================================================================
+
 
 variable "ecr_repository_arns" {
   description = "ARNs de los repositorios ECR"
@@ -374,9 +374,9 @@ variable "ecr_repository_arns" {
   default     = []
 }
 
-# =============================================================================
+
 # VARIABLES PARA CICD
-# =============================================================================
+
 
 variable "enable_cicd" {
   description = "Habilitar módulo CI/CD"
