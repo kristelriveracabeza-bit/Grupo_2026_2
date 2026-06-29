@@ -136,3 +136,4 @@ resource "aws_cloudwatch_log_group" "ecs" {
     Project     = var.project_name
   })
 }
+CKV2_AWS_73 — La cola SQS usa la clave de cifrado por defecto de AWS en vez de una clave propia. Con la clave por defecto, AWS controla el acceso; con clave propia, tú controlas quién puede descifrar los mensajes.
