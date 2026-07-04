@@ -16,6 +16,7 @@ d)Falta de Observabilidad y Control Financiero: El equipo de TI operaba a ciegas
 f)Gestión de Artefactos y Entornos Inconsistentes: Los desarrolladores sufrían el clásico "funciona en mi máquina". La falta de un empaquetado inmutable y un pipeline de despliegue automatizado generaba errores en producción derivados de diferencias en las librerías del sistema operativo, poniendo en riesgo la estabilidad del servicio.
 
 Para resolver estas complejidades y transformar la clínica en un referente de innovación dermatológica, se definió un flujo arquitectónico basado en los pilares del Well-Architected Framework de AWS: Excelencia Operativa, Seguridad, Fiabilidad, Eficiencia de Rendimiento y Optimización de Costes. A continuación, se detalla el ciclo de vida y el flujo operativo extremo a extremo diseñado para afrontar estos retos.
+
 ---
 
 ## **1. Ciclo de Vida: Integración y Despliegue Continuo (CI/CD)**
