@@ -1,8 +1,21 @@
 # Grupo_2026_2
 # DermaCloud - Descripción Detallada del Flujo Arquitectónico
 
-A continuación, se detalla el ciclo de vida y el flujo operativo extremo a extremo de la plataforma, dividida en sus fases de automatización, lógica de negocio, persistencia y observabilidad avanzada.
+Los pacientes de una clínica dermatológica moderna han experimentado un cambio radical en sus hábitos de consumo sanitario. Ya no toleran los engorrosos procesos de reserva telefónica o las largas esperas en recepción. Hoy, el paciente exige una experiencia ágil y fluida, similar a la de un e-commerce, para gestionar su cuidado personal. Esto incluye desde agendar evaluaciones preventivas para rutinas de limpieza facial profunda, hasta solicitar recetas digitales para geles limpiadores específicos que controlen la dermatitis, o programar seguimientos capilares personalizados para tratar tanto el cabello lacio como el cabello grueso, que requieren fórmulas y concentraciones de activos totalmente diferentes.
 
+Este nuevo paradigma de atención, sumado a campañas estacionales de prevención del cáncer de piel o aperturas masivas de agendas de especialistas, genera picos de tráfico exponenciales que saturan los sistemas tradicionales. La clínica se enfrenta a una encrucijada crítica con los siguientes desafíos no resueltos:
+
+a) Alta Concurrencia y Escalabilidad Reactiva: Durante las horas pico (ej. apertura de turnos los lunes a las 8:00 AM), la plataforma recibe miles de peticiones simultáneas. El sistema antiguo colapsaba, devolviendo errores 503 y frustrando a los pacientes, lo que se traducía en pérdida de facturación y deterioro de la reputación de la clínica.
+
+b) Seguridad y Cumplimiento Sanitario Estricto: La gestión de historias clínicas, fotos de lesiones dermatológicas (con alta resolución) y recetas médicas digitales implica el manejo de datos altamente confidenciales. La plataforma debe cumplir rigurosamente con la Ley de Protección de Datos Personales (Perú - Ley N° 29733) y estándares internacionales como HIPAA, exigiendo cifrado en tránsito y en reposo, trazabilidad absoluta de accesos y una férrea gestión de identidades para evitar fugas de información.
+
+c)Complejidad en la Lógica de Negocio y Asincronía: Procesar una cita no es un evento aislado. Implica verificar disponibilidad en tiempo real de múltiples especialistas, validar la cobertura de seguros, generar documentos legales en formato PDF (como consentimientos informados o recetas con principios activos específicos) y enviar recordatorios vía SMS/Email. Esta cadena de tareas intensivas en cómputo, si se ejecuta de forma síncrona, degrada gravemente la experiencia del usuario.
+
+d)Falta de Observabilidad y Control Financiero: El equipo de TI operaba a ciegas. No existía una correlación clara entre los logs de los servidores, las métricas de rendimiento de la base de datos y la trazabilidad de las peticiones de los pacientes. Esto alargaba los tiempos de resolución de incidentes (MTTR) de horas a días. Además, los costos de infraestructura en la nube se disparaban sin control debido a la falta de políticas de autoescalado y monitoreo presupuestario.
+
+f)Gestión de Artefactos y Entornos Inconsistentes: Los desarrolladores sufrían el clásico "funciona en mi máquina". La falta de un empaquetado inmutable y un pipeline de despliegue automatizado generaba errores en producción derivados de diferencias en las librerías del sistema operativo, poniendo en riesgo la estabilidad del servicio.
+
+Para resolver estas complejidades y transformar la clínica en un referente de innovación dermatológica, se definió un flujo arquitectónico basado en los pilares del Well-Architected Framework de AWS: Excelencia Operativa, Seguridad, Fiabilidad, Eficiencia de Rendimiento y Optimización de Costes. A continuación, se detalla el ciclo de vida y el flujo operativo extremo a extremo diseñado para afrontar estos retos.
 ---
 
 ## **1. Ciclo de Vida: Integración y Despliegue Continuo (CI/CD)**
