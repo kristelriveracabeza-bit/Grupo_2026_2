@@ -28,7 +28,7 @@ jobs:
       - name: Levantar SonarQube
         run: |
           docker compose -f docker-compose.yml up -d sonarqube sonar-db
-          echo " SonarQube y PostgreSQL iniciados"
+          echo "SonarQube y PostgreSQL iniciados"
 
       - name: Wait for SonarQube to be ready
         run: |
