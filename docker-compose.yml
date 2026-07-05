@@ -92,19 +92,20 @@ services:
     image: postgres:16
     container_name: lab-sonar-db
     environment:
-      POSTGRES_USER: sonar
-      POSTGRES_PASSWORD: sonar
-      POSTGRES_DB: sonarqube
+     POSTGRES_USER: sonar
+     POSTGRES_PASSWORD: sonar
+     POSTGRES_DB: sonarqube
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+    - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
-      - observability-net
+    - observability-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sonar"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+     test: ["CMD-SHELL", "pg_isready -U sonar -d sonarqube"]  
+     interval: 10s
+     timeout: 5s
+     retries: 5
+     start_period: 40s  
 
   sonarqube:
     image: sonarqube:community
