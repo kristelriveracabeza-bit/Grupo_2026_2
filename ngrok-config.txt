@@ -1,0 +1,9 @@
+version: "2"
+tunnels:
+  sonarqube:
+    addr: http://localhost:9000
+    proto: http
+    schemes:
+      - https
+      - http
+    domain: fit-moccasin-nicely.ngrok-free.app
