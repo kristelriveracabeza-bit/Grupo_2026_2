@@ -1,17 +1,84 @@
-name: SonarQube analysis
+name: SonarQube Analysis
+
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: [ main, develop, feature-* ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:   # Para ejecución manual
+
 jobs:
-  Analysis:
+  sonarqube:
+    name: Analyze with SonarQube (Self-hosted)
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Analyze with SonarQube
+
+      - name: Start SonarQube + PostgreSQL
+        run: |
+          docker compose up -d sonarqube sonar-db
+          echo "✅ SonarQube y PostgreSQL iniciados"
+
+      - name: Wait for SonarQube to be ready
+        run: |
+          echo " Esperando a que SonarQube esté operativo..."
+          for i in $(seq 1 60); do
+            if curl -s http://localhost:9000/api/system/status | grep -q "UP"; then
+              echo " SonarQube está listo"
+              exit 0
+            fi
+            echo " Esperando... ($i/60)"
+            sleep 10
+          done
+          echo " SonarQube no respondió a tiempo" >&2
+          exit 1
+
+      - name: Generate analysis token
+        id: sonar-token
+        run: |
+          # Cambiar contraseña por defecto (solo necesario la primera vez)
+          curl -s -u admin:admin -X POST \
+            "http://localhost:9000/api/users/change_password" \
+            -d "login=admin&previousPassword=admin&password=Admin123!" || true
+
+          # Generar token para el proyecto
+          TOKEN=$(curl -s -u admin:Admin123! -X POST \
+            "http://localhost:9000/api/user_tokens/generate" \
+            -d "name=analysis-token" \
+            -d "type=PROJECT_ANALYSIS_TOKEN" \
+            | jq -r '.token')
+
+          echo "TOKEN=$TOKEN" >> $GITHUB_OUTPUT
+          echo " Token generado correctamente"
+
+      - name: Run SonarQube analysis
         uses: SonarSource/sonarqube-scan-action@v2.0.1
         env:
-          SONAR_TOKEN:  ${ secrets.SONAR_TOKEN}
+          SONAR_TOKEN: ${{ steps.sonar-token.outputs.TOKEN }}
           SONAR_HOST_URL: http://localhost:9000
+        with:
+          args: >
+            -Dsonar.projectKey=dermatologia
+            -Dsonar.sources=.
+
+      - name: Verify Quality Gate
+        run: |
+          echo "Verificando Quality Gate..."
+          sleep 30
+          QUALITY_GATE=$(curl -s "http://localhost:9000/api/qualitygates/project_status?projectKey=dermatologia" | jq -r '.projectStatus.status')
+          if [ "$QUALITY_GATE" = "OK" ]; then
+            echo " Quality Gate APROBADO"
+          else
+            echo "Quality Gate FALLÓ"
+            exit 1
+          fi
+
+      - name: Shutdown SonarQube
+        if: always()
+        run: |
+          docker compose down
+          echo "🛑 SonarQube apagado correctamente"
