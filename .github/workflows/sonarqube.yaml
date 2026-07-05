@@ -18,6 +18,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Depurar estructura de archivos
+        run: |
+          echo "Directorio actual: $(pwd)"
+          echo "Archivos en la raíz:"
+          ls -la
+          echo "Buscando docker-compose.yml:"
+          find . -name "docker-compose.yml" -type f
       - name: Levantar SonarQube
         run: |
           docker compose up -d sonarqube sonar-db
