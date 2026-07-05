@@ -18,10 +18,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Start SonarQube + PostgreSQL
+      - name: Levantar SonarQube
         run: |
           docker compose up -d sonarqube sonar-db
-          echo "✅ SonarQube y PostgreSQL iniciados"
+          echo " SonarQube y PostgreSQL iniciados"
 
       - name: Wait for SonarQube to be ready
         run: |
@@ -81,4 +81,4 @@ jobs:
         if: always()
         run: |
           docker compose down
-          echo "🛑 SonarQube apagado correctamente"
+          echo " SonarQube apagado correctamente"
