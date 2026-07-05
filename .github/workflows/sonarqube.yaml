@@ -27,7 +27,7 @@ jobs:
           find . -name "docker-compose.yml" -type f
       - name: Levantar SonarQube
         run: |
-          docker compose up -d sonarqube sonar-db
+          docker compose -f docker-compose.yml up -d sonarqube sonar-db
           echo " SonarQube y PostgreSQL iniciados"
 
       - name: Wait for SonarQube to be ready
