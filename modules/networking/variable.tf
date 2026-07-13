@@ -244,9 +244,9 @@ variable "domain_name_servers" {
 
   validation {
     condition = alltrue([
-      for dns in var.domain_name_servers : can(regex("^(\\d{1,3}\\.){3}\\d{1,3}$|^[a-zA-Z0-9.-]+$", dns))
+      for dns in var.domain_name_servers : can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$|^[a-zA-Z0-9.-]+$", dns))
     ])
-    error_message = "Cada servidor DNS debe ser una IP válida o un nombre de dominio."
+    error_message = "Cada servidor DNS debe ser una dirección IP válida o un nombre de dominio estructurado correctamente."
   }
 }
 
@@ -332,7 +332,7 @@ variable "create_opensearch_security_group" {
 }
 
 
-# VARIABLES PARA DESPLIEGUE 
+# VARIABLES PARA DESPLIEGUE
 
 
 variable "enable_vpn_gateway" {
@@ -368,4 +368,3 @@ variable "preferred_azs" {
   type        = list(string)
   default     = []
 }
-
