@@ -9,7 +9,10 @@ data "aws_vpc" "this" {
 resource "random_id" "suffix" {
   byte_length = 4
 }
+
+# =============================================================================
 # 1. DYNAMODB TABLES
+# =============================================================================
 
 # Tabla: Citas (Appointments) - Almacena todas las citas médicas
 resource "aws_dynamodb_table" "appointments" {
@@ -17,6 +20,7 @@ resource "aws_dynamodb_table" "appointments" {
   billing_mode   = var.dynamodb_billing_mode
   read_capacity  = var.dynamodb_read_capacity
   write_capacity = var.dynamodb_write_capacity
+  hash_key       = "appointment_id"
 
   # Clave primaria - ID único de la cita
   attribute {
@@ -24,25 +28,25 @@ resource "aws_dynamodb_table" "appointments" {
     type = "S"
   }
 
-  # ID del paciente asociado a la cita
+  # ID del paciente asociado a la cita (Requerido por PatientIndex)
   attribute {
     name = "patient_id"
     type = "S"
   }
 
-  # ID del doctor asignado a la cita
+  # ID del doctor asignado a la cita (Requerido por DoctorIndex)
   attribute {
     name = "doctor_id"
     type = "S"
   }
 
-  # Fecha y hora de la cita en formato ISO
+  # Fecha y hora de la cita (Requerido como range_key en GSIs)
   attribute {
     name = "appointment_date"
     type = "S"
   }
 
-  # Estado de la cita: scheduled, completed, cancelled, etc.
+  # Estado de la cita: scheduled, completed, etc. (Requerido por StatusIndex)
   attribute {
     name = "status"
     type = "S"
@@ -50,46 +54,43 @@ resource "aws_dynamodb_table" "appointments" {
 
   # GSI para buscar citas por paciente y fecha
   global_secondary_index {
-    name               = "PatientIndex"
-    # hash_key           = "patient_id"
-    # range_key          = "appointment_date"
-    projection_type    = "ALL"
-    read_capacity      = var.dynamodb_read_capacity
-    write_capacity     = var.dynamodb_write_capacity
+    name            = "PatientIndex"
+    hash_key        = "patient_id"
+    range_key       = "appointment_date"
+    projection_type = "ALL"
+    read_capacity   = var.dynamodb_read_capacity
+    write_capacity  = var.dynamodb_write_capacity
   }
 
   # GSI para buscar citas por doctor y fecha
   global_secondary_index {
-    name               = "DoctorIndex"
-    # hash_key           = "doctor_id"
-    # range_key          = "appointment_date"
-    projection_type    = "ALL"
-    read_capacity      = var.dynamodb_read_capacity
-    write_capacity     = var.dynamodb_write_capacity
+    name            = "DoctorIndex"
+    hash_key        = "doctor_id"
+    range_key       = "appointment_date"
+    projection_type = "ALL"
+    read_capacity   = var.dynamodb_read_capacity
+    write_capacity  = var.dynamodb_write_capacity
   }
 
   # GSI para buscar citas por estado y fecha
   global_secondary_index {
-    name               = "StatusIndex"
-    # hash_key           = "status"
-    # range_key          = "appointment_date"
-    projection_type    = "ALL"
-    read_capacity      = var.dynamodb_read_capacity
-    write_capacity     = var.dynamodb_write_capacity
+    name            = "StatusIndex"
+    hash_key        = "status"
+    range_key       = "appointment_date"
+    projection_type = "ALL"
+    read_capacity   = var.dynamodb_read_capacity
+    write_capacity  = var.dynamodb_write_capacity
   }
 
-  # Point-in-Time Recovery - Permite restaurar la tabla a cualquier punto en los últimos 35 días
   point_in_time_recovery {
     enabled = var.enable_pitr
   }
 
-  # Time-to-Live - Elimina automáticamente registros antiguos basados en expires_at
   ttl {
     attribute_name = "expires_at"
     enabled        = var.enable_ttl
   }
 
-  # Cifrado en reposo usando KMS
   server_side_encryption {
     enabled     = true
     kms_key_arn = var.kms_key_arn
@@ -107,20 +108,18 @@ resource "aws_dynamodb_table" "patients" {
   billing_mode   = var.dynamodb_billing_mode
   read_capacity  = var.dynamodb_read_capacity
   write_capacity = var.dynamodb_write_capacity
+  hash_key       = "patient_id"
 
-  # ID único del paciente
   attribute {
     name = "patient_id"
     type = "S"
   }
 
-  # Email del paciente (único)
   attribute {
     name = "email"
     type = "S"
   }
 
-  # Teléfono del paciente
   attribute {
     name = "phone"
     type = "S"
@@ -128,28 +127,26 @@ resource "aws_dynamodb_table" "patients" {
 
   # GSI para buscar pacientes por email
   global_secondary_index {
-    name               = "EmailIndex"
-    # hash_key           = "email"
-    projection_type    = "ALL"
-    read_capacity      = var.dynamodb_read_capacity
-    write_capacity     = var.dynamodb_write_capacity
+    name            = "EmailIndex"
+    hash_key        = "email"
+    projection_type = "ALL"
+    read_capacity   = var.dynamodb_read_capacity
+    write_capacity  = var.dynamodb_write_capacity
   }
 
   # GSI para buscar pacientes por teléfono
   global_secondary_index {
-    name               = "PhoneIndex"
-    # hash_key           = "phone"
-    projection_type    = "ALL"
-    read_capacity      = var.dynamodb_read_capacity
-    write_capacity     = var.dynamodb_write_capacity
+    name            = "PhoneIndex"
+    hash_key        = "phone"
+    projection_type = "ALL"
+    read_capacity   = var.dynamodb_read_capacity
+    write_capacity  = var.dynamodb_write_capacity
   }
 
-  # PITR para recuperación ante desastres
   point_in_time_recovery {
     enabled = var.enable_pitr
   }
 
-  # Cifrado en reposo
   server_side_encryption {
     enabled     = true
     kms_key_arn = var.kms_key_arn
@@ -167,49 +164,45 @@ resource "aws_dynamodb_table" "doctors" {
   billing_mode   = var.dynamodb_billing_mode
   read_capacity  = var.dynamodb_read_capacity
   write_capacity = var.dynamodb_write_capacity
+  hash_key       = "doctor_id"
 
-  # ID único del doctor
   attribute {
     name = "doctor_id"
     type = "S"
   }
 
-  # Especialidad del doctor (Cardiología, Pediatría, etc.)
   attribute {
     name = "specialty"
     type = "S"
   }
 
-  # Email del doctor
   attribute {
     name = "email"
     type = "S"
   }
 
-  # GSI para buscar doctores por especialidad
+  # GSI para buscar doctores por specialty
   global_secondary_index {
-    name               = "SpecialtyIndex"
-    # hash_key           = "specialty"
-    projection_type    = "ALL"
-    read_capacity      = var.dynamodb_read_capacity
-    write_capacity     = var.dynamodb_write_capacity
+    name            = "SpecialtyIndex"
+    hash_key        = "specialty"
+    projection_type = "ALL"
+    read_capacity   = var.dynamodb_read_capacity
+    write_capacity  = var.dynamodb_write_capacity
   }
 
   # GSI para buscar doctores por email
   global_secondary_index {
-    name               = "EmailIndex"
-    # hash_key           = "email"
-    projection_type    = "ALL"
-    read_capacity      = var.dynamodb_read_capacity
-    write_capacity     = var.dynamodb_write_capacity
+    name            = "EmailIndex"
+    hash_key        = "email"
+    projection_type = "ALL"
+    read_capacity   = var.dynamodb_read_capacity
+    write_capacity  = var.dynamodb_write_capacity
   }
 
-  # PITR habilitado
   point_in_time_recovery {
     enabled = var.enable_pitr
   }
 
-  # Cifrado en reposo
   server_side_encryption {
     enabled     = true
     kms_key_arn = var.kms_key_arn
@@ -221,32 +214,29 @@ resource "aws_dynamodb_table" "doctors" {
   })
 }
 
-# Tabla: Historial de citas (Appointment History) - Auditoría de cambios
+# Tabla: Historial de citas (Appointment History)
 resource "aws_dynamodb_table" "appointment_history" {
   name           = "${var.project_name}-appointment-history-${var.environment}"
   billing_mode   = var.dynamodb_billing_mode
   read_capacity  = var.dynamodb_read_capacity
   write_capacity = var.dynamodb_write_capacity
+  hash_key       = "history_id"
 
-  # ID único del registro de historial
   attribute {
     name = "history_id"
     type = "S"
   }
 
-  # ID de la cita relacionada
   attribute {
     name = "appointment_id"
     type = "S"
   }
 
-  # Fecha y hora de la acción
   attribute {
     name = "action_date"
     type = "S"
   }
 
-  # Tipo de acción: CREATED, UPDATED, CANCELLED, COMPLETED
   attribute {
     name = "action_type"
     type = "S"
@@ -254,36 +244,33 @@ resource "aws_dynamodb_table" "appointment_history" {
 
   # GSI para ver historial por cita
   global_secondary_index {
-    name               = "AppointmentActionIndex"
-    # hash_key           = "appointment_id"
-    # range_key          = "action_date"
-    projection_type    = "ALL"
-    read_capacity      = var.dynamodb_read_capacity
-    write_capacity     = var.dynamodb_write_capacity
+    name            = "AppointmentActionIndex"
+    hash_key        = "appointment_id"
+    range_key       = "action_date"
+    projection_type = "ALL"
+    read_capacity   = var.dynamodb_read_capacity
+    write_capacity  = var.dynamodb_write_capacity
   }
 
   # GSI para buscar acciones por tipo
   global_secondary_index {
-    name               = "ActionTypeIndex"
-    # hash_key           = "action_type"
-    # range_key          = "action_date"
-    projection_type    = "ALL"
-    read_capacity      = var.dynamodb_read_capacity
-    write_capacity     = var.dynamodb_write_capacity
+    name            = "ActionTypeIndex"
+    hash_key        = "action_type"
+    range_key       = "action_date"
+    projection_type = "ALL"
+    read_capacity   = var.dynamodb_read_capacity
+    write_capacity  = var.dynamodb_write_capacity
   }
 
-  # PITR habilitado para auditoría
   point_in_time_recovery {
     enabled = var.enable_pitr
   }
 
-  # TTL habilitado (siempre activo para historial)
   ttl {
     attribute_name = "expires_at"
     enabled        = true
   }
 
-  # Cifrado en reposo
   server_side_encryption {
     enabled     = true
     kms_key_arn = var.kms_key_arn
@@ -299,7 +286,16 @@ resource "aws_dynamodb_table" "appointment_history" {
 # ALMACENAMIENTO S3 PARA ARCHIVOS
 # =============================================================================
 
-# Versionamiento - Mantiene versiones anteriores de los objetos
+resource "aws_s3_bucket" "data_storage" {
+  bucket        = "${var.project_name}-data-storage-${var.environment}-${random_id.suffix.hex}"
+  force_destroy = var.environment == "prod" ? false : true
+
+  tags = merge(var.tags, {
+    Name        = "${var.project_name}-data-storage-${var.environment}"
+    Environment = var.environment
+  })
+}
+
 resource "aws_s3_bucket_versioning" "storage_versioning" {
   bucket = aws_s3_bucket.data_storage.id
   versioning_configuration {
@@ -307,7 +303,6 @@ resource "aws_s3_bucket_versioning" "storage_versioning" {
   }
 }
 
-# Cifrado en reposo - Cifra todos los objetos con AES256
 resource "aws_s3_bucket_server_side_encryption_configuration" "storage_encryption" {
   bucket = aws_s3_bucket.data_storage.id
 
@@ -318,7 +313,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "storage_encryptio
   }
 }
 
-# Bloqueo de acceso público - Seguridad reforzada
 resource "aws_s3_bucket_public_access_block" "storage_public_access" {
   bucket = aws_s3_bucket.data_storage.id
 
@@ -328,7 +322,6 @@ resource "aws_s3_bucket_public_access_block" "storage_public_access" {
   restrict_public_buckets = true
 }
 
-# Política de bucket - Fuerza conexiones HTTPS
 resource "aws_s3_bucket_policy" "storage_https" {
   bucket = aws_s3_bucket.data_storage.id
 
@@ -354,11 +347,9 @@ resource "aws_s3_bucket_policy" "storage_https" {
   })
 }
 
-# Ciclo de vida - Administra automáticamente el almacenamiento
 resource "aws_s3_bucket_lifecycle_configuration" "storage_lifecycle" {
   bucket = aws_s3_bucket.data_storage.id
 
-  # Regla 1: Mueve archivos antiguos a Glacier para ahorrar costos
   rule {
     id     = "archive-old-files"
     status = "Enabled"
@@ -371,7 +362,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "storage_lifecycle" {
     }
   }
 
-  # Regla 2: Elimina versiones antiguas de objetos
   rule {
     id     = "delete-old-versions"
     status = "Enabled"
@@ -384,7 +374,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "storage_lifecycle" {
   }
 }
 
-# Estructura de carpetas - Crea directorios virtuales en el bucket
 resource "aws_s3_object" "uploads_folder" {
   bucket  = aws_s3_bucket.data_storage.id
   key     = "uploads/"
@@ -403,9 +392,10 @@ resource "aws_s3_object" "temp_folder" {
   content = ""
 }
 
+# =============================================================================
 # 2. ELASTICACHE (REDIS) PARA CACHÉ DE HORARIOS
+# =============================================================================
 
-# Subnet group - Define en qué subredes puede desplegarse Redis
 resource "aws_elasticache_subnet_group" "redis" {
   name        = "${var.project_name}-redis-subnet-${var.environment}"
   subnet_ids  = var.private_subnet_ids
@@ -417,13 +407,11 @@ resource "aws_elasticache_subnet_group" "redis" {
   })
 }
 
-# Security Group - Controla el tráfico hacia Redis
 resource "aws_security_group" "redis" {
   name        = "${var.project_name}-redis-sg-${var.environment}"
   description = "Security group for ElastiCache Redis"
   vpc_id      = var.vpc_id
 
-  # Regla de entrada: Permite conexiones desde los grupos de seguridad de la aplicación
   ingress {
     description     = "Redis port from application"
     from_port       = var.redis_port
@@ -432,7 +420,6 @@ resource "aws_security_group" "redis" {
     security_groups = var.application_security_group_ids
   }
 
-  # Regla de salida: Permite todo el tráfico saliente
   egress {
     from_port   = 0
     to_port     = 0
@@ -446,7 +433,6 @@ resource "aws_security_group" "redis" {
   })
 }
 
-# CloudWatch Log Group para logs de Redis
 resource "aws_cloudwatch_log_group" "redis_logs" {
   name              = "/aws/elasticache/${var.project_name}-redis-${var.environment}"
   retention_in_days = var.cloudwatch_log_retention_days
@@ -457,7 +443,6 @@ resource "aws_cloudwatch_log_group" "redis_logs" {
   })
 }
 
-# Cluster Redis - Instancia de caché en memoria
 resource "aws_elasticache_cluster" "redis" {
   cluster_id           = "${var.project_name}-redis-${var.environment}"
   engine               = "redis"
@@ -468,11 +453,9 @@ resource "aws_elasticache_cluster" "redis" {
   subnet_group_name    = aws_elasticache_subnet_group.redis.name
   security_group_ids   = [aws_security_group.redis.id]
 
-  # Configuración de snapshots para respaldos automáticos
   snapshot_retention_limit = var.redis_snapshot_retention_days
   snapshot_window          = var.redis_snapshot_window
 
-  # Logging habilitado para auditoría
   log_delivery_configuration {
     destination      = aws_cloudwatch_log_group.redis_logs.name
     destination_type = "cloudwatch-logs"
@@ -493,9 +476,10 @@ resource "aws_elasticache_cluster" "redis" {
   })
 }
 
+# =============================================================================
 # 3. OPENSEARCH SERVICE PARA BÚSQUEDA DE DOCTORES
+# =============================================================================
 
-# CloudWatch Log Group para logs de OpenSearch
 resource "aws_cloudwatch_log_group" "opensearch_logs" {
   name              = "/aws/opensearch/${var.project_name}-doctors-${var.environment}"
   retention_in_days = var.cloudwatch_log_retention_days
@@ -506,7 +490,6 @@ resource "aws_cloudwatch_log_group" "opensearch_logs" {
   })
 }
 
-# Política de acceso para que OpenSearch pueda escribir logs
 resource "aws_cloudwatch_log_resource_policy" "opensearch_log_policy" {
   policy_name = "${var.project_name}-opensearch-log-policy-${var.environment}"
 
@@ -529,13 +512,11 @@ resource "aws_cloudwatch_log_resource_policy" "opensearch_log_policy" {
   })
 }
 
-# Security Group - Controla acceso a OpenSearch
 resource "aws_security_group" "opensearch" {
   name        = "${var.project_name}-opensearch-sg-${var.environment}"
   description = "Security group for OpenSearch"
   vpc_id      = var.vpc_id
 
-  # Permite conexiones desde la aplicación en el puerto de OpenSearch
   ingress {
     description     = "OpenSearch port from application"
     from_port       = var.opensearch_port
@@ -557,12 +538,10 @@ resource "aws_security_group" "opensearch" {
   })
 }
 
-# Dominio OpenSearch - Servicio de búsqueda gestionado
 resource "aws_opensearch_domain" "doctors_search" {
   domain_name    = "${var.project_name}-doctors-${var.environment}"
   engine_version = "OpenSearch_2.11"
 
-  # Configuración del cluster
   cluster_config {
     instance_type            = var.opensearch_instance_type
     instance_count           = var.opensearch_instance_count
@@ -572,31 +551,26 @@ resource "aws_opensearch_domain" "doctors_search" {
     dedicated_master_count   = var.opensearch_dedicated_master_count
   }
 
-  # Almacenamiento EBS para los datos
   ebs_options {
     ebs_enabled = true
     volume_type = "gp3"
     volume_size = var.opensearch_volume_size
   }
 
-  # Cifrado en reposo
   encrypt_at_rest {
     enabled    = true
     kms_key_id = var.kms_key_arn
   }
 
-  # Cifrado entre nodos (tráfico interno)
   node_to_node_encryption {
     enabled = true
   }
 
-  # Configuración del endpoint - Fuerza HTTPS y TLS 1.2+
   domain_endpoint_options {
     enforce_https       = true
     tls_security_policy = "Policy-Min-TLS-1-2-2019-07"
   }
 
-  # Logging habilitado para OpenSearch
   log_publishing_options {
     cloudwatch_log_group_arn = aws_cloudwatch_log_group.opensearch_logs.arn
     log_type                 = "AUDIT_LOGS"
@@ -615,7 +589,6 @@ resource "aws_opensearch_domain" "doctors_search" {
     enabled                  = true
   }
 
-  # Seguridad avanzada - Autenticación interna
   advanced_security_options {
     enabled                        = true
     internal_user_database_enabled = true
@@ -626,13 +599,11 @@ resource "aws_opensearch_domain" "doctors_search" {
     }
   }
 
-  # Configuración VPC - Despliega dentro de la VPC en subredes privadas
   vpc_options {
     security_group_ids = [aws_security_group.opensearch.id]
-    subnet_ids         = var.private_subnet_ids
+    subnet_ids         = [var.private_subnet_ids[0]] # Mapeado a un ID válido de lista
   }
 
-  # Snapshots automáticos para respaldos
   snapshot_options {
     automated_snapshot_start_hour = var.opensearch_snapshot_hour
   }
@@ -643,14 +614,12 @@ resource "aws_opensearch_domain" "doctors_search" {
   })
 }
 
-# Política de acceso - Controla quién puede acceder al dominio
 resource "aws_opensearch_domain_policy" "doctors_search" {
   domain_name = aws_opensearch_domain.doctors_search.domain_name
 
   access_policies = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # Permite a la aplicación realizar operaciones HTTP en OpenSearch
       {
         Effect = "Allow"
         Principal = {
@@ -665,7 +634,6 @@ resource "aws_opensearch_domain_policy" "doctors_search" {
         ]
         Resource = "${aws_opensearch_domain.doctors_search.arn}/*"
       },
-      # Permite acceso desde IPs específicas (para administración)
       {
         Effect = "Allow"
         Principal = {
@@ -683,10 +651,10 @@ resource "aws_opensearch_domain_policy" "doctors_search" {
   })
 }
 
+# =============================================================================
 # VPC ENDPOINTS 
+# =============================================================================
 
-
-# Endpoint Gateway para S3 - Permite acceso privado a S3
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = var.vpc_id
   service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
@@ -699,7 +667,6 @@ resource "aws_vpc_endpoint" "s3" {
   })
 }
 
-# Endpoint Gateway para DynamoDB - Acceso privado a DynamoDB
 resource "aws_vpc_endpoint" "dynamodb" {
   vpc_id            = var.vpc_id
   service_name      = "com.amazonaws.${data.aws_region.current.name}.dynamodb"
@@ -712,7 +679,6 @@ resource "aws_vpc_endpoint" "dynamodb" {
   })
 }
 
-# Endpoint Interface para OpenSearch - Conexión privada a OpenSearch
 resource "aws_vpc_endpoint" "opensearch" {
   vpc_id             = var.vpc_id
   service_name       = "com.amazonaws.${data.aws_region.current.name}.es"
@@ -727,10 +693,9 @@ resource "aws_vpc_endpoint" "opensearch" {
 }
 
 # =============================================================================
-# CLOUDWATCH ALARMS - Monitoreo y alertas
+# CLOUDWATCH ALARMS
 # =============================================================================
 
-# Alarma: Throttling en DynamoDB - Detecta cuando se excede la capacidad
 resource "aws_cloudwatch_metric_alarm" "dynamodb_throttled" {
   count = var.enable_db_alarms ? 1 : 0
 
@@ -756,7 +721,6 @@ resource "aws_cloudwatch_metric_alarm" "dynamodb_throttled" {
   })
 }
 
-# Alarma: CPU de Redis - Detecta alta utilización de CPU
 resource "aws_cloudwatch_metric_alarm" "redis_cpu" {
   count = var.enable_db_alarms ? 1 : 0
 
@@ -782,7 +746,6 @@ resource "aws_cloudwatch_metric_alarm" "redis_cpu" {
   })
 }
 
-# Alarma: CPU de OpenSearch - Detecta alta utilización en el cluster de búsqueda
 resource "aws_cloudwatch_metric_alarm" "opensearch_cpu" {
   count = var.enable_db_alarms ? 1 : 0
 
@@ -808,9 +771,10 @@ resource "aws_cloudwatch_metric_alarm" "opensearch_cpu" {
   })
 }
 
-# SECRETS MANAGER - Almacenamiento seguro de credenciales
+# =============================================================================
+# SECRETS MANAGER
+# =============================================================================
 
-# Secret - Contenedor para las credenciales
 resource "aws_secretsmanager_secret" "db_credentials" {
   count = var.create_db_secret ? 1 : 0
 
@@ -819,12 +783,11 @@ resource "aws_secretsmanager_secret" "db_credentials" {
   recovery_window_in_days = 7
 
   tags = merge(var.tags, {
-    Name        = "${var.project_name}-db-credentials-${var.environment}"
-    Environment = var.environment
+    Name                    = "${var.project_name}-db-credentials-${var.environment}"
+    Environment             = var.environment
   })
 }
 
-# Versión del secret - Contiene los valores reales en formato JSON
 resource "aws_secretsmanager_secret_version" "db_credentials" {
   count = var.create_db_secret ? 1 : 0
 
@@ -852,9 +815,10 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
   })
 }
 
-# IAM POLICIES - Políticas de permisos para la aplicación
+# =============================================================================
+# IAM POLICIES
+# =============================================================================
 
-# Política: Acceso a DynamoDB - Permite operaciones CRUD en todas las tablas
 resource "aws_iam_policy" "dynamodb_access" {
   name        = "${var.project_name}-dynamodb-access-${var.environment}"
   description = "Política para acceso a tablas DynamoDB del proyecto"
@@ -915,7 +879,6 @@ resource "aws_iam_policy" "dynamodb_access" {
   })
 }
 
-# Política: Acceso a S3 - Permite operaciones con archivos en el bucket
 resource "aws_iam_policy" "s3_access" {
   name        = "${var.project_name}-s3-access-${var.environment}"
   description = "Política para acceso al bucket S3 del proyecto"
@@ -946,7 +909,6 @@ resource "aws_iam_policy" "s3_access" {
   })
 }
 
-# Política: Acceso a ElastiCache - Permite describir clusters de Redis
 resource "aws_iam_policy" "elasticache_access" {
   name        = "${var.project_name}-elasticache-access-${var.environment}"
   description = "Política para acceso a ElastiCache Redis"
@@ -972,7 +934,6 @@ resource "aws_iam_policy" "elasticache_access" {
   })
 }
 
-# Política: Acceso a OpenSearch - Permite operaciones HTTP en el dominio
 resource "aws_iam_policy" "opensearch_access" {
   name        = "${var.project_name}-opensearch-access-${var.environment}"
   description = "Política para acceso a OpenSearch"
