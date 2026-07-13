@@ -1,4 +1,3 @@
-
 # OUTPUTS DEL MÓDULO CICD
 
 
@@ -29,6 +28,11 @@ output "codepipeline_stages" {
 output "codepipeline_version" {
   description = "Versión del pipeline"
   value       = aws_codepipeline.this.version
+}
+
+output "pipeline_url" {
+  description = "URL para acceder al pipeline en AWS Console"
+  value       = "https://console.aws.amazon.com/codesuite/codepipeline/pipelines/${aws_codepipeline.this.name}/view?region=${data.aws_region.current.name}"
 }
 
 
@@ -148,6 +152,11 @@ output "artifacts_bucket_regional_domain_name" {
   value       = aws_s3_bucket.artifacts.bucket_regional_domain_name
 }
 
+output "s3_artifacts_url" {
+  description = "URL para acceder al bucket de artefactos en AWS Console"
+  value       = "https://s3.console.aws.amazon.com/s3/buckets/${aws_s3_bucket.artifacts.bucket}?region=${data.aws_region.current.name}"
+}
+
 output "cloudtrail_bucket_name" {
   description = "Nombre del bucket S3 para logs de CloudTrail"
   value       = aws_s3_bucket.cloudtrail_logs.bucket
@@ -235,6 +244,7 @@ output "pipeline_role_id" {
   value       = aws_iam_role.pipeline_role.id
 }
 
+
 # KMS OUTPUTS
 
 
@@ -284,18 +294,18 @@ output "budgets_enabled" {
 output "cloudwatch_log_groups" {
   description = "Nombres de los grupos de logs de CloudWatch para CodeBuild"
   value = {
-    build       = aws_cloudwatch_log_group.codebuild_build.name
-    sonarqube   = aws_cloudwatch_log_group.codebuild_sonarqube.name
-    checkov     = var.enable_checkov ? aws_cloudwatch_log_group.codebuild_checkov[0].name : null
+    build     = aws_cloudwatch_log_group.codebuild_build.name
+    sonarqube = aws_cloudwatch_log_group.codebuild_sonarqube.name
+    checkov   = var.enable_checkov ? aws_cloudwatch_log_group.codebuild_checkov[0].name : null
   }
 }
 
 output "cloudwatch_log_group_arns" {
   description = "ARNs de los grupos de logs de CloudWatch"
   value = {
-    build       = aws_cloudwatch_log_group.codebuild_build.arn
-    sonarqube   = aws_cloudwatch_log_group.codebuild_sonarqube.arn
-    checkov     = var.enable_checkov ? aws_cloudwatch_log_group.codebuild_checkov[0].arn : null
+    build     = aws_cloudwatch_log_group.codebuild_build.arn
+    sonarqube = aws_cloudwatch_log_group.codebuild_sonarqube.arn
+    checkov   = var.enable_checkov ? aws_cloudwatch_log_group.codebuild_checkov[0].arn : null
   }
 }
 
@@ -409,40 +419,6 @@ output "checkov_severity" {
 }
 
 
-# PIPELINE STATUS AND URLS
-
-
-output "pipeline_url" {
-  description = "URL para acceder al pipeline en AWS Console"
-  value       = "https://console.aws.amazon.com/codesuite/codepipeline/pipelines/${aws_codepipeline.this.name}/view?region=${data.aws_region.current.name}"
-}
-
-output "codebuild_url" {
-  description = "URL para acceder a CodeBuild en AWS Console"
-  value       = "https://console.aws.amazon.com/codesuite/codebuild/projects/${aws_codebuild_project.app_build.name}/history?region=${data.aws_region.current.name}"
-}
-
-output "codedeploy_url" {
-  description = "URL para acceder a CodeDeploy en AWS Console"
-  value       = "https://console.aws.amazon.com/codesuite/codedeploy/applications/${aws_codedeploy_app.ecs.name}/deployment-groups/${aws_codedeploy_deployment_group.ecs.deployment_group_name}?region=${data.aws_region.current.name}"
-}
-
-output "cloudtrail_url" {
-  description = "URL para acceder a CloudTrail en AWS Console"
-  value       = "https://console.aws.amazon.com/cloudtrail/home?region=${data.aws_region.current.name}#/events"
-}
-
-output "secrets_manager_url" {
-  description = "URL para acceder a Secrets Manager en AWS Console"
-  value       = "https://console.aws.amazon.com/secretsmanager/home?region=${data.aws_region.current.name}#/secret?name=${aws_secretsmanager_secret.sonarqube_token.name}"
-}
-
-output "s3_artifacts_url" {
-  description = "URL para acceder al bucket de artefactos en AWS Console"
-  value       = "https://s3.console.aws.amazon.com/s3/buckets/${aws_s3_bucket.artifacts.bucket}?region=${data.aws_region.current.name}"
-}
-
-
 # TAGS OUTPUTS
 
 
@@ -457,7 +433,7 @@ output "common_tags" {
 
 output "all_tags" {
   description = "Todos los tags aplicados (incluyendo los personalizados)"
-  value       = merge(
+  value = merge(
     {
       Environment = var.environment
       Project     = var.project_name
@@ -543,6 +519,7 @@ output "manual_approval_emails" {
   description = "Emails para aprobación manual"
   value       = var.manual_approval_emails
 }
+
 
 # SECURITY OUTPUTS
 
