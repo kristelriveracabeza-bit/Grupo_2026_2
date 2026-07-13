@@ -1,55 +1,61 @@
+
 # VARIABLES BÁSICAS DEL PROYECTO
+
 
 variable "project_name" {
   description = "Nombre del proyecto"
   type        = string
-  default     = "dermatologia"  
+  default     = "dermatologia"
 }
 
 variable "environment" {
-  description = "Entorno: dev, qa, prod"
+  description = "Entorno de despliegue (dev, qa, prod)"
   type        = string
-  default     = "prod"  
+  default     = "prod"
 }
 
-# VARIABLES PARA RECURSOS 
+
+# VARIABLES PARA RECURSOS EXISTENTES (DATA SOURCES)
+
 
 variable "existing_sns_topic_name" {
-  description = "Nombre del tema SNS existente (ej: Dermatologia_Probando.fifo)"
+  description = "Nombre del tema SNS existente"
   type        = string
-  default     = "Dermatologia_Probando.fifo"  
+  default     = "Dermatologia_Probando.fifo"
 }
 
 variable "existing_sqs_queue_name" {
-  description = "Nombre de la cola SQS existente (ej: Dermatologia o Dermatologia.fifo)"
+  description = "Nombre de la cola SQS existente (Debe terminar en .fifo)"
   type        = string
-  default     = "Dermatologia"  
+  default     = "Dermatologia.fifo"
 }
 
 variable "existing_s3_bucket_name" {
-  description = "Nombre del bucket S3 existente"
+  description = "Nombre del bucket S3 existente para almacenamiento de imágenes"
   type        = string
-  default     = "dermaimagenes"  
+  default     = "dermaimagenes"
 }
 
 variable "lambda_function_name" {
-  description = "Nombre de la función Lambda existente"
+  description = "Nombre de la función Lambda existente para Reserva de Citas"
   type        = string
-  default     = "Dermatologia_Reverva_de_Cita"  
+  default     = "Dermatologia_Reverva_de_Cita"
 }
 
 variable "lambda_role_name" {
-  description = "Nombre del rol IAM que usa la Lambda"
+  description = "Nombre del rol IAM asignado a la ejecución de la Lambda"
   type        = string
-  default     = null  
+  default     = "dermatologia-lambda-role" # Se asigna un valor por defecto seguro en lugar de null
 }
 
-# VARIABLES PARA CREAR RECURSOS NUEVOS 
+
+# VARIABLES PARA CONTROL DE CREACIÓN OPCIONAL DE RECURSOS
+
 
 variable "create_new_sns_topic" {
   description = "Si es true, crea un nuevo SNS topic. Si es false, usa el existente"
   type        = bool
-  default     = false  
+  default     = false
 }
 
 variable "new_sns_topic_name" {
@@ -59,9 +65,9 @@ variable "new_sns_topic_name" {
 }
 
 variable "new_sns_topic_fifo" {
-  description = "Si el nuevo SNS topic debe ser FIFO"
+  description = "Define si el nuevo SNS topic debe configurarse como FIFO"
   type        = bool
-  default     = true  
+  default     = true
 }
 
 variable "create_new_sqs_queue" {
@@ -77,7 +83,7 @@ variable "new_sqs_queue_name" {
 }
 
 variable "new_sqs_queue_fifo" {
-  description = "Si la nueva cola SQS debe ser FIFO (requerido si SNS es FIFO)"
+  description = "Define si la nueva cola SQS debe ser FIFO (requerido si el flujo es FIFO)"
   type        = bool
   default     = true
 }
@@ -94,162 +100,152 @@ variable "new_s3_bucket_name" {
   default     = null
 }
 
-# VARIABLES PARA LAMBDA 
+
+# VARIABLES DE CONFIGURACIÓN DE LAMBDA
+
 
 variable "lambda_zip_path" {
-  description = "Ruta del archivo ZIP de la Lambda"
+  description = "Ruta local del archivo ejecutable ZIP de la Lambda"
   type        = string
   default     = "lambda.zip"
 }
 
 variable "lambda_handler" {
-  description = "Handler de la Lambda"
+  description = "Punto de entrada (Handler) de la función Lambda"
   type        = string
   default     = "index.handler"
 }
 
 variable "lambda_runtime" {
-  description = "Runtime de la Lambda"
+  description = "Entorno de ejecución (Runtime) para la función Lambda"
   type        = string
   default     = "python3.9"
 }
 
 variable "lambda_timeout" {
-  description = "Timeout de la Lambda en segundos"
+  description = "Tiempo límite de ejecución de la Lambda en segundos"
   type        = number
   default     = 30
 }
 
 variable "lambda_memory_size" {
-  description = "Memoria de la Lambda en MB"
+  description = "Cantidad de memoria asignada a la Lambda en MB"
   type        = number
   default     = 128
 }
 
 
-# VARIABLES ADICIONALES
+# VARIABLES PARA SERVICIOS EXTERNOS (SECRETS, COGNITO, ECS)
+
+
+variable "secret_name" {
+  description = "Nombre del secreto en AWS Secrets Manager que contiene las credenciales de la BD"
+  type        = string
+  default     = "dermatologia/db-credentials"
+}
+
+variable "cognito_user_pool_id" {
+  description = "ID del User Pool de Cognito para la autenticación"
+  type        = string
+  default     = "us-east-1_XXXXXXXXX"
+}
+
+variable "cognito_client_id" {
+  description = "ID de la aplicación cliente (Client ID) de Cognito"
+  type        = string
+  default     = "XXXXXXXXXXXXXXXXXXXX"
+}
+
+variable "ecs_cluster_name" {
+  description = "Nombre del cluster de ECS existente"
+  type        = string
+  default     = "dermatologia-cluster"
+}
+
+variable "appointments_service_name" {
+  description = "Nombre del microservicio ECS encargado de las citas"
+  type        = string
+  default     = "appointments-service"
+}
+
+variable "patients_service_name" {
+  description = "Nombre del microservicio ECS encargado de los pacientes"
+  type        = string
+  default     = "patients-service"
+}
+
+
+# VARIABLES PARA MONITOREO Y ALERTAS (CLOUDWATCH)
+
+
+variable "log_retention_days" {
+  description = "Días de retención para el CloudWatch Log Group de la Lambda"
+  type        = number
+  default     = 30
+}
+
+variable "sqs_depth_threshold" {
+  description = "Cantidad límite de mensajes visibles en cola antes de disparar la alarma"
+  type        = number
+  default     = 100
+}
+
+variable "lambda_duration_threshold" {
+  description = "Umbral crítico de duración promedio de la Lambda en milisegundos"
+  type        = number
+  default     = 25000 # 25 segundos
+}
+
+variable "create_alerts_topic" {
+  description = "Determina si se creará el tópico SNS dedicado para alertaría de infraestructura"
+  type        = bool
+  default     = true
+}
+
+
+# VARIABLES PARA CONTROL DE COSTOS (AWS BUDGETS)
+
+
+variable "create_budget" {
+  description = "Habilitar la creación de un presupuesto de AWS Budgets"
+  type        = bool
+  default     = true
+}
+
+variable "budget_limit_amount" {
+  description = "Límite del presupuesto mensual en USD"
+  type        = string
+  default     = "50"
+}
+
+variable "budget_threshold_first" {
+  description = "Primer umbral porcentual de alerta de costos esperados (Forecasted)"
+  type        = number
+  default     = 80
+}
+
+variable "budget_threshold_second" {
+  description = "Segundo umbral porcentual de alerta sobre costos reales acumulados (Actual)"
+  type        = number
+  default     = 100
+}
+
+variable "budget_alert_emails" {
+  description = "Lista de correos electrónicos encargados de recibir notificaciones de costos"
+  type        = list(string)
+  default     = ["admin@clinica.com"]
+}
+
+
+# ETIQUETADO GENERAL (TAGS)
 
 
 variable "tags" {
-  description = "Tags para los recursos"
+  description = "Metadatos organizacionales aplicables a todos los recursos creados"
   type        = map(string)
   default = {
     Project     = "Dermatologia"
     Environment = "prod"
     ManagedBy   = "Terraform"
   }
-}
-
-# VARIABLES PARA SECRETS MANAGER
-variable "secret_name" {
-  description = "Nombre del secret en AWS Secrets Manager para credenciales de base de datos"
-  type        = string
-  default     = "dermatologia/db-credentials"
-}
-
-# VARIABLES PARA COGNITO
-variable "cognito_user_pool_id" {
-  description = "ID del User Pool de Cognito (ej: us-east-1_XXXXX)"
-  type        = string
-  default     = "us-east-1_XXXXXXXXX"  
-}
-
-variable "cognito_client_id" {
-  description = "ID del Client de Cognito (ej: 1234567890abcdefghij)"
-  type        = string
-  default     = "XXXXXXXXXXXXXXXXXXXX"  
-}
-
-# VARIABLES PARA MICROSERVICIOS ECS
-variable "ecs_cluster_name" {
-  description = "Nombre del cluster ECS"
-  type        = string
-  default     = "dermatologia-cluster"
-}
-
-variable "appointments_service_name" {
-  description = "Nombre del servicio ECS para gestión de citas"
-  type        = string
-  default     = "appointments-service"
-}
-
-variable "patients_service_name" {
-  description = "Nombre del servicio ECS para gestión de pacientes"
-  type        = string
-  default     = "patients-service"
-}
-
-variable "appointments_endpoint" {
-  description = "Endpoint HTTP del microservicio de citas"
-  type        = string
-  default     = "http://appointments-service.dermatologia.local:8080/events"
-}
-
-variable "patients_endpoint" {
-  description = "Endpoint HTTP del microservicio de pacientes"
-  type        = string
-  default     = "http://patients-service.dermatologia.local:8080/events"
-}
-
-variable "enable_microservice_subscriptions" {
-  description = "Habilitar suscripciones directas de SNS a microservicios ECS"
-  type        = bool
-  default     = true
-}
-
-# VARIABLES PARA CLOUDWATCH Y MONITOREO
-variable "log_retention_days" {
-  description = "Días de retención de logs en CloudWatch"
-  type        = number
-  default     = 30
-}
-
-variable "sqs_depth_threshold" {
-  description = "Umbral de mensajes en cola SQS para activar alarma"
-  type        = number
-  default     = 100
-}
-
-variable "lambda_duration_threshold" {
-  description = "Umbral de duración de Lambda en milisegundos para activar alarma"
-  type        = number
-  default     = 25000  
-}
-
-# VARIABLES PARA SNS DE ALERTAS
-variable "create_alerts_topic" {
-  description = "Crear un SNS topic separado para alertas"
-  type        = bool
-  default     = true
-}
-
-# VARIABLES PARA AWS BUDGETS
-variable "create_budget" {
-  description = "Crear un presupuesto de AWS para el módulo events"
-  type        = bool
-  default     = true
-}
-
-variable "budget_limit_amount" {
-  description = "Monto límite del presupuesto en USD"
-  type        = string
-  default     = "50"
-}
-
-variable "budget_threshold_first" {
-  description = "Primer umbral de alerta de presupuesto (porcentaje)"
-  type        = number
-  default     = 80
-}
-
-variable "budget_threshold_second" {
-  description = "Segundo umbral de alerta de presupuesto (porcentaje)"
-  type        = number
-  default     = 100
-}
-
-variable "budget_alert_emails" {
-  description = "Lista de correos electrónicos para alertas de presupuesto"
-  type        = list(string)
-  default     = ["admin@clinica.com"]
 }
