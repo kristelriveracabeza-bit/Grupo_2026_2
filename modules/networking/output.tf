@@ -1,6 +1,7 @@
 
 # OUTPUTS DE LA VPC
 
+
 output "vpc_id" {
   description = "ID de la VPC"
   value       = aws_vpc.this.id
@@ -18,6 +19,7 @@ output "vpc_arn" {
 
 
 # OUTPUTS DE SUBNETS PÚBLICAS
+
 
 output "public_subnet_ids" {
   description = "Lista de IDs de las subredes públicas"
@@ -37,6 +39,7 @@ output "public_subnet_cidrs" {
 
 # OUTPUTS DE SUBNETS PRIVADAS
 
+
 output "private_subnet_ids" {
   description = "Lista de IDs de las subredes privadas"
   value       = aws_subnet.private[*].id
@@ -52,7 +55,10 @@ output "private_subnet_cidrs" {
   value       = aws_subnet.private[*].cidr_block
 }
 
+
 # OUTPUTS DE TABLAS DE RUTEO
+
+
 output "public_route_table_id" {
   description = "ID de la tabla de ruteo pública"
   value       = aws_route_table.public.id
@@ -68,7 +74,9 @@ output "private_route_table_ids" {
   value       = [aws_route_table.private.id]
 }
 
+
 # OUTPUTS DE NAT GATEWAY
+
 
 output "nat_gateway_ids" {
   description = "IDs de los NAT Gateways (si están habilitados)"
@@ -85,14 +93,18 @@ output "nat_gateway_enabled" {
   value       = var.enable_nat_gateway
 }
 
+
 # OUTPUTS DE INTERNET GATEWAY
+
 
 output "internet_gateway_id" {
   description = "ID del Internet Gateway"
   value       = aws_internet_gateway.this.id
 }
 
+
 # OUTPUTS DE VPC ENDPOINTS (GATEWAY)
+
 
 output "vpc_endpoint_s3_id" {
   description = "ID del VPC Endpoint para S3"
@@ -121,6 +133,7 @@ output "s3_vpc_endpoint_route_tables" {
 
 
 # OUTPUTS DE VPC ENDPOINTS (INTERFACE)
+
 
 output "vpc_endpoint_sqs_id" {
   description = "ID del VPC Endpoint para SQS"
@@ -247,7 +260,9 @@ output "vpc_endpoint_ecs_telemetry_arn" {
   value       = var.enable_ecs_vpc_endpoint ? aws_vpc_endpoint.ecs_telemetry[0].arn : null
 }
 
+
 # OUTPUTS DE AWS CLOUD MAP
+
 
 output "cloud_map_namespace_id" {
   description = "ID del namespace de Cloud Map"
@@ -284,7 +299,9 @@ output "cloud_map_service_patients_arn" {
   value       = aws_service_discovery_service.patients.arn
 }
 
+
 # OUTPUTS DE ROUTE 53
+
 
 output "route53_record_alb_name" {
   description = "Nombre del registro Route 53 para el ALB"
@@ -301,7 +318,9 @@ output "route53_record_alb_zone_id" {
   value       = var.create_route53_records ? aws_route53_record.alb[0].zone_id : null
 }
 
+
 # OUTPUTS DE SECURITY GROUPS
+
 
 output "alb_security_group_id" {
   description = "ID del Security Group del Application Load Balancer"
@@ -355,15 +374,17 @@ output "opensearch_security_group_arn" {
 
 output "vpc_endpoints_security_group_id" {
   description = "ID del Security Group para VPC Endpoints"
-  value       = var.enable_vpc_endpoints_security_group ? aws_security_group.vpc_endpoints[0].id : null
+  value       = local.enable_vpce_sg ? aws_security_group.vpc_endpoints[0].id : null
 }
 
 output "vpc_endpoints_security_group_arn" {
   description = "ARN del Security Group para VPC Endpoints"
-  value       = var.enable_vpc_endpoints_security_group ? aws_security_group.vpc_endpoints[0].arn : null
+  value       = local.enable_vpce_sg ? aws_security_group.vpc_endpoints[0].arn : null
 }
 
+
 # OUTPUTS DE VPC FLOW LOGS
+
 
 output "vpc_flow_logs_group_name" {
   description = "Nombre del log group de VPC Flow Logs"
@@ -385,7 +406,9 @@ output "vpc_flow_logs_enabled" {
   value       = var.enable_vpc_flow_logs
 }
 
+
 # OUTPUTS DE NETWORK ACLS
+
 
 output "network_acl_public_id" {
   description = "ID de la Network ACL pública"
@@ -398,39 +421,38 @@ output "network_acl_private_id" {
 }
 
 
-# OUTPUTS DE ZONAS DE DISPONIBILIDAD
+# OUTPUTS DE INFORMACIÓN GENERAL Y RESÚMENES
+
 
 output "availability_zones" {
   description = "Lista de zonas de disponibilidad utilizadas"
   value       = var.availability_zones
 }
 
-# OUTPUTS DE INFORMACIÓN GENERAL
-
 output "vpc_endpoints_enabled" {
   description = "Mapa de VPC Endpoints habilitados"
   value = {
-    s3              = var.enable_s3_vpc_endpoint
-    dynamodb        = var.enable_dynamodb_vpc_endpoint
-    sqs             = var.enable_sqs_vpc_endpoint
-    sns             = var.enable_sns_vpc_endpoint
-    ecr             = var.enable_ecr_vpc_endpoint
-    secretsmanager  = var.enable_secretsmanager_vpc_endpoint
-    cloudwatch      = var.enable_cloudwatch_vpc_endpoint
-    opensearch      = var.enable_opensearch_vpc_endpoint
-    elasticache     = var.enable_elasticache_vpc_endpoint
-    ecs             = var.enable_ecs_vpc_endpoint
+    s3             = var.enable_s3_vpc_endpoint
+    dynamodb       = var.enable_dynamodb_vpc_endpoint
+    sqs            = var.enable_sqs_vpc_endpoint
+    sns            = var.enable_sns_vpc_endpoint
+    ecr            = var.enable_ecr_vpc_endpoint
+    secretsmanager = var.enable_secretsmanager_vpc_endpoint
+    cloudwatch     = var.enable_cloudwatch_vpc_endpoint
+    opensearch     = var.enable_opensearch_vpc_endpoint
+    elasticache    = var.enable_elasticache_vpc_endpoint
+    ecs            = var.enable_ecs_vpc_endpoint
   }
 }
 
 output "security_groups_summary" {
-  description = "Resumen de Security Groups creados"
+  description = "Resumen de los IDs de los Security Groups creados"
   value = {
     alb           = aws_security_group.alb.id
     ecs           = aws_security_group.ecs.id
     rds           = var.create_rds_security_group ? aws_security_group.rds[0].id : "not_created"
     redis         = var.create_redis_security_group ? aws_security_group.redis[0].id : "not_created"
     opensearch    = var.create_opensearch_security_group ? aws_security_group.opensearch[0].id : "not_created"
-    vpc_endpoints = var.enable_vpc_endpoints_security_group ? aws_security_group.vpc_endpoints[0].id : "not_created"
+    vpc_endpoints = local.enable_vpce_sg ? aws_security_group.vpc_endpoints[0].id : "not_created"
   }
 }
