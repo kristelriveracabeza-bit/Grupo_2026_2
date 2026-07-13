@@ -1,6 +1,4 @@
-
 # OUTPUTS DEL MÓDULO COMPUTE
-
 
 
 # ECS OUTPUTS
@@ -133,12 +131,12 @@ output "lambda_event_source_mapping_uuid" {
 
 output "lambda_dlq_arn" {
   description = "ARN de la DLQ de Lambda"
-  value       = aws_sqs_queue.lambda_dlq.arn
+  value       = var.enable_lambda ? aws_sqs_queue.lambda_dlq[0].arn : null
 }
 
 output "lambda_dlq_url" {
   description = "URL de la DLQ de Lambda"
-  value       = aws_sqs_queue.lambda_dlq.id
+  value       = var.enable_lambda ? aws_sqs_queue.lambda_dlq[0].id : null
 }
 
 
