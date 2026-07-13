@@ -10,9 +10,9 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
-# =============================================================================
+
 # 1. DYNAMODB TABLES
-# =============================================================================
+
 
 # Tabla: Citas (Appointments) - Almacena todas las citas médicas
 resource "aws_dynamodb_table" "appointments" {
@@ -282,9 +282,9 @@ resource "aws_dynamodb_table" "appointment_history" {
   })
 }
 
-# =============================================================================
+
 # ALMACENAMIENTO S3 PARA ARCHIVOS
-# =============================================================================
+
 
 resource "aws_s3_bucket" "data_storage" {
   bucket        = "${var.project_name}-data-storage-${var.environment}-${random_id.suffix.hex}"
@@ -392,9 +392,8 @@ resource "aws_s3_object" "temp_folder" {
   content = ""
 }
 
-# =============================================================================
 # 2. ELASTICACHE (REDIS) PARA CACHÉ DE HORARIOS
-# =============================================================================
+
 
 resource "aws_elasticache_subnet_group" "redis" {
   name        = "${var.project_name}-redis-subnet-${var.environment}"
@@ -476,9 +475,9 @@ resource "aws_elasticache_cluster" "redis" {
   })
 }
 
-# =============================================================================
+
 # 3. OPENSEARCH SERVICE PARA BÚSQUEDA DE DOCTORES
-# =============================================================================
+
 
 resource "aws_cloudwatch_log_group" "opensearch_logs" {
   name              = "/aws/opensearch/${var.project_name}-doctors-${var.environment}"
@@ -651,9 +650,8 @@ resource "aws_opensearch_domain_policy" "doctors_search" {
   })
 }
 
-# =============================================================================
 # VPC ENDPOINTS 
-# =============================================================================
+
 
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = var.vpc_id
@@ -692,9 +690,9 @@ resource "aws_vpc_endpoint" "opensearch" {
   })
 }
 
-# =============================================================================
+
 # CLOUDWATCH ALARMS
-# =============================================================================
+
 
 resource "aws_cloudwatch_metric_alarm" "dynamodb_throttled" {
   count = var.enable_db_alarms ? 1 : 0
@@ -771,9 +769,9 @@ resource "aws_cloudwatch_metric_alarm" "opensearch_cpu" {
   })
 }
 
-# =============================================================================
+
 # SECRETS MANAGER
-# =============================================================================
+
 
 resource "aws_secretsmanager_secret" "db_credentials" {
   count = var.create_db_secret ? 1 : 0
@@ -815,9 +813,9 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
   })
 }
 
-# =============================================================================
+
 # IAM POLICIES
-# =============================================================================
+
 
 resource "aws_iam_policy" "dynamodb_access" {
   name        = "${var.project_name}-dynamodb-access-${var.environment}"
