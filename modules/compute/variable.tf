@@ -1,6 +1,4 @@
-
 # VARIABLES DEL MÓDULO COMPUTE
-
 
 
 # VARIABLES OBLIGATORIAS
@@ -14,7 +12,7 @@ variable "project_name" {
 variable "environment" {
   description = "Entorno: dev, qa, prod"
   type        = string
-  
+
   validation {
     condition     = contains(["dev", "qa", "prod"], var.environment)
     error_message = "El entorno debe ser: dev, qa o prod."
@@ -208,6 +206,24 @@ variable "sns_topic_arn" {
   default     = ""
 }
 
+variable "secret_name" {
+  description = "Nombre del secret en Secrets Manager"
+  type        = string
+  default     = ""
+}
+
+variable "cognito_user_pool_id" {
+  description = "ID del User Pool de Cognito"
+  type        = string
+  default     = ""
+}
+
+variable "cognito_client_id" {
+  description = "ID del Client de Cognito"
+  type        = string
+  default     = ""
+}
+
 
 # VARIABLES PARA LOGS
 
@@ -226,23 +242,4 @@ variable "tags" {
   description = "Tags adicionales para todos los recursos"
   type        = map(string)
   default     = {}
-}
-# Agregar al final de modules/compute/variable.tf
-
-variable "secret_name" {
-  description = "Nombre del secret en Secrets Manager"
-  type        = string
-  default     = ""
-}
-
-variable "cognito_user_pool_id" {
-  description = "ID del User Pool de Cognito"
-  type        = string
-  default     = ""
-}
-
-variable "cognito_client_id" {
-  description = "ID del Client de Cognito"
-  type        = string
-  default     = ""
 }
