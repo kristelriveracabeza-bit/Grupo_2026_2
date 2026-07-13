@@ -1,6 +1,7 @@
 
 # OUTPUTS DE DYNAMODB
 
+
 output "dynamodb_appointments_table_name" {
   description = "Nombre de la tabla DynamoDB de citas"
   value       = aws_dynamodb_table.appointments.name
@@ -61,7 +62,9 @@ output "dynamodb_table_arns" {
   }
 }
 
+
 # OUTPUTS DE ELASTICACHE (REDIS)
+
 
 output "redis_endpoint" {
   description = "Endpoint de conexión para Redis"
@@ -103,7 +106,9 @@ output "redis_connection_string" {
   value       = "${aws_elasticache_cluster.redis.cache_nodes[0].address}:${var.redis_port}"
 }
 
+
 # OUTPUTS DE OPENSEARCH
+
 
 output "opensearch_endpoint" {
   description = "Endpoint de conexión para OpenSearch"
@@ -140,7 +145,9 @@ output "opensearch_dashboard_endpoint" {
   value       = aws_opensearch_domain.doctors_search.dashboard_endpoint
 }
 
+
 # OUTPUTS DE S3
+
 
 output "s3_bucket_id" {
   description = "ID del bucket S3"
@@ -182,6 +189,7 @@ output "s3_temp_folder" {
   value       = "s3://${aws_s3_bucket.data_storage.bucket}/temp/"
 }
 
+
 # OUTPUTS DE VPC ENDPOINTS
 
 
@@ -200,7 +208,9 @@ output "vpc_endpoint_opensearch_id" {
   value       = aws_vpc_endpoint.opensearch.id
 }
 
+
 # OUTPUTS DE CLOUDWATCH ALARMS
+
 
 output "cloudwatch_alarm_dynamodb_throttled_name" {
   description = "Nombre de la alarma de CloudWatch para DynamoDB throttled"
@@ -217,7 +227,9 @@ output "cloudwatch_alarm_opensearch_cpu_name" {
   value       = try(aws_cloudwatch_metric_alarm.opensearch_cpu[0].alarm_name, null)
 }
 
+
 # OUTPUTS DE SECRETS MANAGER
+
 
 output "secrets_manager_secret_id" {
   description = "ID del secreto en Secrets Manager"
@@ -234,7 +246,9 @@ output "secrets_manager_secret_name" {
   value       = try(aws_secretsmanager_secret.db_credentials[0].name, null)
 }
 
+
 # OUTPUTS DE IAM POLICIES
+
 
 output "iam_policy_dynamodb_access_name" {
   description = "Nombre de la política IAM para acceso a DynamoDB"
@@ -279,8 +293,8 @@ output "iam_policy_opensearch_access_arn" {
 output "iam_policy_names" {
   description = "Mapa con todos los nombres de las políticas IAM"
   value = {
-    dynamodb_access   = aws_iam_policy.dynamodb_access.name
-    s3_access         = aws_iam_policy.s3_access.name
+    dynamodb_access    = aws_iam_policy.dynamodb_access.name
+    s3_access          = aws_iam_policy.s3_access.name
     elasticache_access = aws_iam_policy.elasticache_access.name
     opensearch_access  = aws_iam_policy.opensearch_access.name
   }
@@ -289,14 +303,16 @@ output "iam_policy_names" {
 output "iam_policy_arns" {
   description = "Mapa con todos los ARNs de las políticas IAM"
   value = {
-    dynamodb_access   = aws_iam_policy.dynamodb_access.arn
-    s3_access         = aws_iam_policy.s3_access.arn
+    dynamodb_access    = aws_iam_policy.dynamodb_access.arn
+    s3_access          = aws_iam_policy.s3_access.arn
     elasticache_access = aws_iam_policy.elasticache_access.arn
     opensearch_access  = aws_iam_policy.opensearch_access.arn
   }
 }
 
+
 # OUTPUTS DE INFORMACIÓN GENERAL
+
 
 output "aws_region" {
   description = "Región de AWS donde se desplegaron los recursos"
