@@ -1,0 +1,247 @@
+version: 0.2
+
+# CONFIGURACIÓN DE VARIABLES DE ENTORNO NATIVAS
+env:
+  variables:
+    ENVIRONMENT: "dev"
+    LOG_LEVEL: "info"
+    NODE_ENV: "production"
+  
+  # NOTA: Parameter Store y Secrets Manager requieren strings fijos y ARNs/Nombres reales.
+  # Reemplaza 'clinica' por el nombre real de tu proyecto en AWS.
+  parameter-store:
+    DATABASE_URL: "/clinica/dev/database/url"
+    REDIS_URL: "/clinica/dev/redis/url"
+    API_KEY: "/clinica/dev/api/key"
+  
+  secrets-manager:
+    DB_PASSWORD: "clinica-db-password-dev:password"
+    JWT_SECRET: "clinica-jwt-secret-dev:secret"
+
+  # Exportamos estas variables dinámicas para que persistan a lo largo de todas las fases
+  exported-variables:
+    - IMAGE_TAG
+    - IMAGE_TAG_WITH_DATE
+
+# CONFIGURACIÓN DE ENVÍO DE REPORTES
+reports:
+  build_reports:
+    files:
+      - '**/*'
+    base-directory: 'reports'
+
+# FASES DEL BUILD
+phases:
+  pre_build:
+    commands:
+      - echo "=== PRE-BUILD: Iniciando ==="
+      - echo "Fecha y hora: $(date)"
+      - echo "AWS Region: ${AWS_DEFAULT_REGION}"
+      - echo "Build ID: ${CODEBUILD_BUILD_ID}"
+      - echo "Source Version: ${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+      
+      # Generación y exportación persistente de variables de entorno dinámicas
+      - echo "=== Configurando variables dinámicas ==="
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - export IMAGE_TAG=${COMMIT_HASH:-latest}
+      - export BUILD_TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+      - export IMAGE_TAG_WITH_DATE="${IMAGE_TAG}-${BUILD_TIMESTAMP}"
+      - echo "IMAGE_TAG: ${IMAGE_TAG}"
+      - echo "IMAGE_TAG_WITH_DATE: ${IMAGE_TAG_WITH_DATE}"
+      - echo "REPOSITORY_URI: ${REPOSITORY_URI}"
+      
+      # Inyectar variables en el perfil del sistema para asegurar persistencia absoluta entre sub-shells
+      - echo "export IMAGE_TAG=${IMAGE_TAG}" >> /etc/profile
+      - echo "export IMAGE_TAG_WITH_DATE=${IMAGE_TAG_WITH_DATE}" >> /etc/profile
+      
+      # Verificar si el repositorio ECR existe, si no, crearlo
+      - echo "=== Verificando repositorio ECR ==="
+      - REPO_NAME=$(basename ${REPOSITORY_URI})
+      - |
+        if ! aws ecr describe-repositories --repository-names ${REPO_NAME} --region ${AWS_DEFAULT_REGION} 2>/dev/null; then
+          echo "El repositorio ECR no existe. Creándolo..."
+          aws ecr create-repository --repository-name ${REPO_NAME} --region ${AWS_DEFAULT_REGION}
+        else
+          echo "Repositorio ECR existente."
+        fi
+      
+      # Login en Amazon ECR
+      - echo "=== Logeando en Amazon ECR ==="
+      - aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
+      
+      # Versiones de herramientas
+      - echo "=== Versiones ==="
+      - docker --version
+      - aws --version
+      - git --version
+      
+      # Verificar archivos críticos de infraestructura y despliegue
+      - echo "=== Verificando archivos ==="
+      - |
+        if [ -f "Dockerfile" ]; then
+          echo " Dockerfile encontrado"
+        else
+          echo " Dockerfile no encontrado"
+          exit 1
+        fi
+      - "[ -f appspec.yaml ] && echo ' appspec.yaml encontrado' || echo ' appspec.yaml no encontrado - se usará el de la raíz o se auto-generará'"
+      - "[ -f taskdef.json ] && echo ' taskdef.json encontrado' || echo ' taskdef.json no encontrado'"
+      
+      # Carga de variables locales de entorno de la aplicación (.env)
+      - echo "=== Variables de aplicación ==="
+      - |
+        if [ -f ".env" ]; then
+          echo "Archivo .env encontrado. Exportando..."
+          export $(cat .env | grep -v '^#' | xargs)
+        fi
+      - echo "ENVIRONMENT: ${ENVIRONMENT:-dev}"
+      - echo "LOG_LEVEL: ${LOG_LEVEL:-info}"
+
+  build:
+    commands:
+      - echo "=== BUILD: Iniciando construcción ==="
+      - echo "Inicio: $(date)"
+      
+      # Asegurar que las variables dinámicas de pre_build estén cargadas en esta fase
+      - . /etc/profile
+      
+      # Construir imagen con argumentos y etiquetas de auditoría
+      - echo "=== Construyendo imagen Docker ==="
+      - |
+        docker build \
+          --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+          --build-arg VCS_REF=${CODEBUILD_RESOLVED_SOURCE_VERSION} \
+          --build-arg BUILD_NUMBER=${CODEBUILD_BUILD_NUMBER} \
+          --build-arg ENVIRONMENT=${ENVIRONMENT:-dev} \
+          --label "com.clinica.build-date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+          --label "com.clinica.vcs-ref=${CODEBUILD_RESOLVED_SOURCE_VERSION}" \
+          --label "com.clinica.build-number=${CODEBUILD_BUILD_NUMBER}" \
+          --label "com.clinica.environment=${ENVIRONMENT:-dev}" \
+          -t ${REPOSITORY_URI}:latest .
+      
+      - echo "=== Verificando imagen local ==="
+      - docker images ${REPOSITORY_URI}:latest
+      
+      # Etiquetar la imagen Docker
+      - echo "=== Etiquetando imagen ==="
+      - docker tag ${REPOSITORY_URI}:latest ${REPOSITORY_URI}:${IMAGE_TAG}
+      - docker tag ${REPOSITORY_URI}:latest ${REPOSITORY_URI}:${IMAGE_TAG_WITH_DATE}
+      
+      # Ejecutar comandos de pruebas en el contenedor si aplica
+      - echo "=== Ejecutando tests en contenedor ==="
+      - |
+        if [ -n "${TEST_COMMAND}" ]; then
+          echo "Ejecutando: ${TEST_COMMAND}"
+          docker run --rm ${REPOSITORY_URI}:latest ${TEST_COMMAND}
+        else
+          echo "No se definió TEST_COMMAND, saltando ejecución de tests."
+        fi
+      
+      - echo "=== BUILD completado ==="
+      - echo "Fin: $(date)"
+
+  post_build:
+    commands:
+      - echo "=== POST-BUILD: Iniciando ==="
+      
+      # Forzar carga de variables de entorno persistentes
+      - . /etc/profile
+      
+      # Subir imágenes etiquetadas al registro de Amazon ECR
+      - echo "=== Subiendo imágenes a ECR ==="
+      - docker push ${REPOSITORY_URI}:latest
+      - docker push ${REPOSITORY_URI}:${IMAGE_TAG}
+      - docker push ${REPOSITORY_URI}:${IMAGE_TAG_WITH_DATE}
+      
+      # Generar archivo imagedefinitions.json estándar para despliegues ECS tradicionales
+      - echo "=== Generando imagedefinitions.json ==="
+      - |
+        cat > imagedefinitions.json << EOF
+        [
+          {
+            "name": "user-app",
+            "imageUri": "${REPOSITORY_URI}:${IMAGE_TAG}"
+          }
+        ]
+        EOF
+      - cat imagedefinitions.json
+      
+      # Procesar y templaterizar taskdef.json si existe en el workspace
+      - echo "=== Procesando taskdef.json ==="
+      - |
+        if [ -f "taskdef.json" ]; then
+          echo "taskdef.json encontrado, procesando sustituciones..."
+          sed -i "s|REPOSITORY_URI|${REPOSITORY_URI}|g" taskdef.json
+          sed -i "s|IMAGE_TAG|${IMAGE_TAG}|g" taskdef.json
+          sed -i "s|ENVIRONMENT|${ENVIRONMENT:-dev}|g" taskdef.json
+          sed -i "s|ACCOUNT_ID|${AWS_ACCOUNT_ID}|g" taskdef.json
+          sed -i "s|REGION|${AWS_DEFAULT_REGION}|g" taskdef.json
+          
+          # Validar estructura del archivo resultante JSON usando jq
+          echo "=== Validando estructura JSON ==="
+          if jq empty taskdef.json 2>/dev/null; then
+            echo " taskdef.json estructurado correctamente"
+          else
+            echo " taskdef.json no es un JSON válido"
+            cat taskdef.json
+            exit 1
+          fi
+        else
+          echo "taskdef.json no encontrado, omitiendo paso..."
+        fi
+      
+      # Procesar o autogenerar archivo appspec.yaml para CodeDeploy (Blue/Green ECS)
+      - echo "=== Procesando appspec.yaml ==="
+      - |
+        if [ -f "appspec.yaml" ]; then
+          echo " appspec.yaml encontrado en el repositorio"
+        else
+          echo "appspec.yaml no encontrado, generando plantilla por defecto..."
+          cat > appspec.yaml << EOF
+        version: 1.0
+        Resources:
+          - TargetService:
+              Type: AWS::ECS::Service
+              Properties:
+                TaskDefinition: "${TASK_DEFINITION_ARN}"
+                LoadBalancerInfo:
+                  ContainerName: "user-app"
+                  ContainerPort: 3001
+        EOF
+        fi
+      
+      # Subir copias de seguridad de artefactos directamente a Amazon S3 si la variable está provista
+      - echo "=== Respaldando artefactos en S3 ==="
+      - |
+        if [ -n "${ARTIFACTS_BUCKET}" ]; then
+          aws s3 cp imagedefinitions.json s3://${ARTIFACTS_BUCKET}/${CODEBUILD_BUILD_ID}/imagedefinitions.json
+          [ -f "taskdef.json" ] && aws s3 cp taskdef.json s3://${ARTIFACTS_BUCKET}/${CODEBUILD_BUILD_ID}/taskdef.json
+          [ -f "appspec.yaml" ] && aws s3 cp appspec.yaml s3://${ARTIFACTS_BUCKET}/${CODEBUILD_BUILD_ID}/appspec.yaml
+        fi
+      
+      # Envío opcional de alertas a canales Slack corporativos
+      - echo "=== Enviando notificaciones de estado ==="
+      - |
+        if [ -n "${SLACK_WEBHOOK_URL}" ]; then
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\" Despliegue de servicio completado de forma exitosa: ${REPOSITORY_URI}:${IMAGE_TAG}\"}" \
+            ${SLACK_WEBHOOK_URL} || echo " No se pudo despachar la notificación a Slack"
+        fi
+      
+      - echo "=== POST-BUILD completado de forma exitosa ==="
+      - echo "Build finalizado el: $(date)"
+
+# ARTEFACTOS GENERADOS PARA PIPELINES POSTERIORES
+artifacts:
+  files:
+    - imagedefinitions.json
+    - appspec.yaml
+    - taskdef.json
+  discard-paths: yes
+
+# GESTIÓN DE CACHÉ DE DEPENDENCIAS
+cache:
+  paths:
+    - '/root/.cache/pip'
+    - '/root/.npm'
+    - '/root/.m2/repository'

@@ -1,0 +1,6 @@
+git
+github
+github-api
+configuration-as-code
+workflow-aggregator
+ansible

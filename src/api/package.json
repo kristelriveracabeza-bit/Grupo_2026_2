@@ -1,0 +1,27 @@
+{
+  "name": "dermatologia-api",
+  "version": "1.0.0",
+  "description": "API REST de Dermatología con conexión a MySQL y AWS",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0",
+    "aws-sdk": "^2.1450.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^6.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.6.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

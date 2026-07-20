@@ -1,0 +1,57 @@
+# STAGE 1: BUILD
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# STAGE 2: NGINX (Runtime)
+FROM nginx:alpine
+RUN apk add --no-cache tzdata curl
+ENV TZ=America/Lima
+
+# Primero copiamos lo que menos cambia (Configuraciones)
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Luego el contenido estático generado
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Finalmente archivos menores y específicos
+COPY health.html /usr/share/nginx/html/health.html
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost/health.html || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
+
+#1. Creación de Redes (Aislamiento)
+#Primero, definimos los puentes de comunicación para segmentar el tráfico:
+#docker network create web_net
+#docker network create api_net
+#docker network create bd_net
+#2. Despliegue de Contenedores
+#Creamos los contenedores asignándoles su red principal y variables de entorno:
+#Base de Datos (MySQL):
+#docker run -d --name mysql-db-8 --network bd_net -e MYSQL_ROOT_PASSWORD=root mysql:8.0-oracle
+#API (Nginx):
+#docker run -d --name nginx --network api_net -e nginx_ROOT_PASSWORD=root nginx:perl
+#Web (Node):
+#docker run -d --name node --network web_net -e node_ROOT_PASSWORD=root node:trixie
+#3. Interconexión (Puentes entre Redes)
+#Para que los contenedores "salten" de una red a otra según la lógica de capas:
+#Conectar API con la BD:
+#docker network connect bd_net nginx
+#Conectar Web con la API:
+#docker network connect api_net node
+#Conexión Extra (según tus últimos comandos):
+#docker network connect bd_net node
+#Verificación y Logs
+#Para asegurar que todo está corriendo correctamente y demostrar la visibilidad:
+#Revisar Logs de la BD:
+#docker logs -f mysql-db-8
+#Prueba de Conectividad (Ping):
+#Para verificar que el contenedor **node** puede ver al contenedor mysql-db-8:
+#docker exec -it node ping -c 4 mysql-db-8
